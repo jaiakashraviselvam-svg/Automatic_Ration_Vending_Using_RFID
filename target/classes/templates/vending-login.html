@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine - Login</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="vending-body">
+
+<div class="page-center" style="background:transparent;">
+    <div>
+        <!-- Machine LED header -->
+        <div class="vending-header">
+            <div style="font-size:3rem;margin-bottom:8px;">🤖</div>
+            <h1>Ration Vending Machine</h1>
+            <p>Scan your RFID card and enter password to access</p>
+        </div>
+
+        <div class="vending-login-box">
+            <div class="vending-title">🔐 Machine Login</div>
+            <div class="vending-subtitle">Enter the same credentials as the web portal</div>
+
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+            <form th:action="@{/vending/login}" method="post">
+                <div class="form-group">
+                    <label class="form-label" for="rfidCard"><span>📟</span> RFID Card Number</label>
+                    <input type="text" id="rfidCard" name="rfidCard" class="form-control"
+                           placeholder="e.g. RFID001" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password"><span>🔒</span> Password</label>
+                    <input type="password" id="password" name="password" class="form-control"
+                           placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn-vend-login">Access Machine →</button>
+            </form>
+
+            <div style="margin-top:20px;text-align:center;">
+                <a href="/login" style="color:#78909c;font-size:0.85rem;text-decoration:none;">← Back to Web Portal</a>
+            </div>
+        </div>
+
+        <!-- Status indicator -->
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:20px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#00e676;animation:pulse 1.5s ease infinite;display:inline-block;"></span>
+            <span style="color:#78909c;font-size:0.8rem;">SYSTEM ONLINE</span>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0%,100% { box-shadow: 0 0 4px #00e676; }
+    50% { box-shadow: 0 0 12px #00e676; }
+}
+</style>
+</body>
+</html>

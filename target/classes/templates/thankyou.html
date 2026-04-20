@@ -1,0 +1,101 @@
+2<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You - Ration Vending Machine</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="thankyou-body">
+
+<div class="thankyou-box">
+    <div class="thankyou-anim">&#x1F389;</div>
+    <div class="thankyou-title">Thank You!</div>
+    <div class="thankyou-msg">
+        Your ration items have been successfully dispensed.<br>
+        Please collect them from the tray below.
+    </div>
+
+    <div th:if="${order != null}" class="dispensed-list">
+        <div style="font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;color:#4db6ac;margin-bottom:12px;font-weight:700;">
+            Items Dispensed
+        </div>
+        <div th:if="${order.riceKg > 0}" class="dispensed-item">
+            <span style="font-size:1.5rem;">&#x1F33E;</span>
+            <span>Rice &mdash; <strong th:text="${order.riceKg} + ' kg'">0 kg</strong></span>
+            <span style="margin-left:auto;color:#69f0ae;font-weight:700;">&#10003;</span>
+        </div>
+        <div th:if="${order.wheatKg > 0}" class="dispensed-item">
+            <span style="font-size:1.5rem;">&#x1F33F;</span>
+            <span>Wheat &mdash; <strong th:text="${order.wheatKg} + ' kg'">0 kg</strong></span>
+            <span style="margin-left:auto;color:#69f0ae;font-weight:700;">&#10003;</span>
+        </div>
+        <div th:if="${order.sugarKg > 0}" class="dispensed-item">
+            <span style="font-size:1.5rem;">&#x1F36C;</span>
+            <span>Sugar &mdash; <strong th:text="${order.sugarKg} + ' kg'">0 kg</strong></span>
+            <span style="margin-left:auto;color:#69f0ae;font-weight:700;">&#10003;</span>
+        </div>
+    </div>
+
+    <div style="margin:20px auto 28px;width:220px;background:rgba(255,255,255,0.05);border:2px solid #00e676;border-radius:8px;padding:16px;text-align:center;">
+        <div style="font-size:0.7rem;letter-spacing:2px;color:#78909c;margin-bottom:8px;">COLLECTION TRAY</div>
+        <div style="font-size:2.2rem;animation:trayBounce 0.8s ease infinite alternate;">
+            <span th:if="${order != null and order.riceKg > 0}">&#x1F33E;</span>
+            <span th:if="${order != null and order.wheatKg > 0}">&#x1F33F;</span>
+            <span th:if="${order != null and order.sugarKg > 0}">&#x1F36C;</span>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="/vending/login" class="btn-home">&#x1F504; New Transaction</a>
+        <a href="/login" class="btn-home">&#x1F3E0; Back to Website</a>
+    </div>
+</div>
+
+<style>
+@keyframes trayBounce { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+</style>
+
+<script>
+/* Play a cheerful ascending chime when page loads */
+window.addEventListener('load', function() {
+    try {
+        var ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        var t    = ctx.currentTime;
+        /* Three rising notes: C5 → E5 → G5 */
+        var notes = [523.25, 659.25, 783.99];
+        notes.forEach(function(freq, i) {
+            var osc  = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            var start = t + i * 0.22;
+            gain.gain.setValueAtTime(0.0,  start);
+            gain.gain.linearRampToValueAtTime(0.35, start + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+            osc.start(start);
+            osc.stop(start + 0.5);
+        });
+
+        /* Final long chord (C5 + E5 + G5 together) */
+        [523.25, 659.25, 783.99].forEach(function(freq) {
+            var osc  = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            var start = t + 0.75;
+            gain.gain.setValueAtTime(0.0,  start);
+            gain.gain.linearRampToValueAtTime(0.2, start + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 1.2);
+            osc.start(start);
+            osc.stop(start + 1.2);
+        });
+    } catch(e) {}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Ration Portal</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/dashboard" class="navbar-brand">
+        <span class="icon">🌾</span> Ration Portal
+    </a>
+    <div class="navbar-right">
+        <a th:href="@{/logout}" class="btn-logout">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="success-box">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Payment Successful!</div>
+        <div class="success-msg">
+            Your payment of <strong>₹<span th:text="${order.totalAmount}">0</span></strong> has been confirmed.<br>
+            Please proceed to the Vending Machine to collect your ration items.
+        </div>
+
+        <div class="order-summary" style="text-align:left;margin-bottom:28px;">
+            <div class="card-title">📦 Confirmed Order</div>
+            <div th:if="${order.riceKg > 0}" class="summary-row">
+                <span>🌾 Rice</span>
+                <span th:text="${order.riceKg} + ' kg'">0 kg</span>
+            </div>
+            <div th:if="${order.wheatKg > 0}" class="summary-row">
+                <span>🌿 Wheat</span>
+                <span th:text="${order.wheatKg} + ' kg'">0 kg</span>
+            </div>
+            <div th:if="${order.sugarKg > 0}" class="summary-row">
+                <span>🍬 Sugar</span>
+                <span th:text="${order.sugarKg} + ' kg'">0 kg</span>
+            </div>
+            <div class="summary-row total-row">
+                <span>Total Paid</span>
+                <span>₹<span th:text="${order.totalAmount}">0</span></span>
+            </div>
+        </div>
+
+        <div style="background:#f3e5f5;border-radius:12px;padding:20px;margin-bottom:28px;text-align:left;">
+            <div style="font-weight:700;color:#4a148c;margin-bottom:8px;">📍 Next Steps</div>
+            <ol style="color:#616161;font-size:0.9rem;padding-left:18px;line-height:1.8;">
+                <li>Go to the Vending Machine terminal</li>
+                <li>Login with your RFID card number and password</li>
+                <li>Press <strong>1</strong> for Rice, <strong>2</strong> for Wheat, <strong>3</strong> for Sugar</li>
+                <li>Collect your items from the tray</li>
+            </ol>
+        </div>
+
+        <a th:href="@{/vending/login}" class="btn-vending">
+            🤖 Go to Vending Machine →
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

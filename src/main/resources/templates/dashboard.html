@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Ration Portal</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/dashboard" class="navbar-brand">
+        <span class="icon">🌾</span> Ration Portal
+    </a>
+    <div class="navbar-right">
+        <span class="nav-user" th:text="'Welcome, ' + ${user.username}"></span>
+        <a th:href="@{/logout}" class="btn-logout">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- User Info Card -->
+    <div class="user-info-card">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+            <h2 th:text="${user.username}">User Name</h2>
+            <p th:text="'📞 ' + ${user.phone} + '  |  📍 ' + ${user.address}">Details</p>
+        </div>
+        <div class="rfid-badge" th:text="'📟 ' + ${user.rfidCard}">RFID</div>
+    </div>
+
+    <!-- Paid order waiting alert -->
+    <div th:if="${paidOrder != null}"
+         style="background:#fff3e0;border:1.5px solid #ff9800;border-radius:12px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="font-size:1.8rem;">&#x26A0;&#xFE0F;</span>
+        <div style="flex:1;">
+            <div style="font-weight:700;color:#e65100;font-size:1rem;">You have a paid order waiting at the vending machine!</div>
+            <div style="font-size:0.88rem;color:#bf360c;margin-top:3px;">
+                Please collect your items first before placing a new order.
+            </div>
+        </div>
+        <a href="/vending/login"
+           style="background:#e65100;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;white-space:nowrap;">
+            &#x1F916; Go to Vending Machine
+        </a>
+    </div>
+
+    <!-- General error alert -->
+    <div th:if="${error}" class="alert alert-warning" th:text="${error}"></div>
+
+    <!-- Page Title -->
+    <div class="card" style="margin-bottom:20px;padding:20px 32px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.8rem;">🛒</span>
+            <div>
+                <div style="font-size:1.3rem;font-weight:700;color:#1b5e20;">Select Your Ration Items</div>
+                <div style="color:#616161;font-size:0.9rem;">Choose quantity for each item below. Government subsidised prices apply.</div>
+            </div>
+        </div>
+    </div>
+
+    <form th:action="@{/order}" method="post" id="orderForm"
+          th:style="${paidOrder != null} ? 'opacity:0.4;pointer-events:none;' : ''"
+          th:title="${paidOrder != null} ? 'Collect your paid order first' : ''">
+        <div class="items-grid">
+
+            <!-- Rice -->
+            <div class="item-card">
+                <span class="item-icon">🌾</span>
+                <div class="item-name">Rice</div>
+                <div class="item-price">₹3 per kg</div>
+                <div class="item-limit">Max: 10 kg per month</div>
+                <div class="qty-control">
+                    <button type="button" class="qty-btn" onclick="changeQty('riceKg', -1)">−</button>
+                    <input type="number" id="riceKg" name="riceKg" class="qty-input" value="0" min="0" max="10" onchange="updateSummary()">
+                    <button type="button" class="qty-btn" onclick="changeQty('riceKg', 1)">+</button>
+                    <span style="font-size:0.85rem;color:#616161;">kg</span>
+                </div>
+            </div>
+
+            <!-- Wheat -->
+            <div class="item-card">
+                <span class="item-icon">🌿</span>
+                <div class="item-name">Wheat</div>
+                <div class="item-price">₹5 per kg</div>
+                <div class="item-limit">Max: 10 kg per month</div>
+                <div class="qty-control">
+                    <button type="button" class="qty-btn" onclick="changeQty('wheatKg', -1)">−</button>
+                    <input type="number" id="wheatKg" name="wheatKg" class="qty-input" value="0" min="0" max="10" onchange="updateSummary()">
+                    <button type="button" class="qty-btn" onclick="changeQty('wheatKg', 1)">+</button>
+                    <span style="font-size:0.85rem;color:#616161;">kg</span>
+                </div>
+            </div>
+
+            <!-- Sugar -->
+            <div class="item-card">
+                <span class="item-icon">🍬</span>
+                <div class="item-name">Sugar</div>
+                <div class="item-price">₹10 per kg</div>
+                <div class="item-limit">Max: 5 kg per month</div>
+                <div class="qty-control">
+                    <button type="button" class="qty-btn" onclick="changeQty('sugarKg', -1)">−</button>
+                    <input type="number" id="sugarKg" name="sugarKg" class="qty-input" value="0" min="0" max="5" onchange="updateSummary()">
+                    <button type="button" class="qty-btn" onclick="changeQty('sugarKg', 1)">+</button>
+                    <span style="font-size:0.85rem;color:#616161;">kg</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Order Summary -->
+        <div class="order-summary">
+            <div class="card-title" style="margin-bottom:16px;padding-bottom:10px;">Order Summary</div>
+            <div class="summary-row" id="riceRow" style="display:none;">
+                <span>🌾 Rice</span><span id="riceTotal">₹0</span>
+            </div>
+            <div class="summary-row" id="wheatRow" style="display:none;">
+                <span>🌿 Wheat</span><span id="wheatTotal">₹0</span>
+            </div>
+            <div class="summary-row" id="sugarRow" style="display:none;">
+                <span>🍬 Sugar</span><span id="sugarTotal">₹0</span>
+            </div>
+            <div class="summary-row" id="emptyRow">
+                <span style="color:#9e9e9e;font-style:italic;">No items selected yet</span><span>₹0</span>
+            </div>
+            <div class="summary-row total-row">
+                <span>Total Amount</span><span id="grandTotal">₹0</span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-order">Proceed to Payment →</button>
+    </form>
+
+</div>
+
+<script>
+function changeQty(id, delta) {
+    var el = document.getElementById(id);
+    var max = parseInt(el.max);
+    var val = parseInt(el.value) + delta;
+    if (val < 0) val = 0;
+    if (val > max) val = max;
+    el.value = val;
+    updateSummary();
+}
+
+function updateSummary() {
+    var rice  = parseInt(document.getElementById('riceKg').value)  || 0;
+    var wheat = parseInt(document.getElementById('wheatKg').value) || 0;
+    var sugar = parseInt(document.getElementById('sugarKg').value) || 0;
+
+    var riceAmt  = rice  * 3;
+    var wheatAmt = wheat * 5;
+    var sugarAmt = sugar * 10;
+    var total    = riceAmt + wheatAmt + sugarAmt;
+
+    document.getElementById('riceTotal').textContent  = '₹' + riceAmt  + ' (' + rice  + 'kg × ₹3)';
+    document.getElementById('wheatTotal').textContent = '₹' + wheatAmt + ' (' + wheat + 'kg × ₹5)';
+    document.getElementById('sugarTotal').textContent = '₹' + sugarAmt + ' (' + sugar + 'kg × ₹10)';
+    document.getElementById('grandTotal').textContent = '₹' + total;
+
+    document.getElementById('riceRow').style.display  = rice  > 0 ? '' : 'none';
+    document.getElementById('wheatRow').style.display = wheat > 0 ? '' : 'none';
+    document.getElementById('sugarRow').style.display = sugar > 0 ? '' : 'none';
+    document.getElementById('emptyRow').style.display = (rice + wheat + sugar) === 0 ? '' : 'none';
+}
+</script>
+</body>
+</html>

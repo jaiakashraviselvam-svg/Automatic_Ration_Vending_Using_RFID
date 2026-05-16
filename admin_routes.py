@@ -162,3 +162,19 @@ def assign_user_shop():
         flash(f'User {user.username} assigned to {shop.name}.', 'success')
         
     return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/reset_orders/<int:user_id>', methods=['POST'])
+@admin_required
+def reset_user_orders(user_id):
+    from models import Order
+    user = User.query.get_or_404(user_id)
+    stuck = Order.query.filter(
+        Order.user_id == user.id,
+        Order.status.in_(['PAID', 'PENDING'])
+    ).all()
+    count = len(stuck)
+    for o in stuck:
+        o.status = 'DISPENSED'
+    db.session.commit()
+    flash(f'Reset {count} stuck order(s) for {user.username}. They can now place a new order.', 'success')
+    return redirect(url_for('admin.users'))

@@ -26,6 +26,7 @@
                     <th>Contact</th>
                     <th>Current Shop</th>
                     <th>Assign Shop</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -77,6 +78,14 @@
                             </select>
                             <button type="submit" class="btn-blue" style="padding:8px 14px;font-size:0.78rem;white-space:nowrap;">
                                 ✓ Assign
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.reset_user_orders', user_id=u.id) }}"
+                              onsubmit="return confirm('Reset all stuck orders for {{ u.username }}?')">
+                            <button type="submit" class="btn-red" style="padding:8px 14px;font-size:0.78rem;white-space:nowrap;">
+                                🔄 Reset Orders
                             </button>
                         </form>
                     </td>

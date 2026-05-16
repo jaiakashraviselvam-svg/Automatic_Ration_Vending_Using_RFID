@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — Ration Portal</title>
+    <!-- Theme init MUST run before render to avoid flash -->
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('rnTheme') || 'dark');</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -103,6 +105,32 @@
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
         }
         .summary-body{padding:16px 22px;}
+
+        /* Hide number input spinners (arrows) */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .qty-input {
+            width: 45px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-weight: 700;
+            font-size: 1rem;
+            outline: none;
+        }
+        .item-quota { margin: 8px 0 12px; }
+        .quota-avail { font-size: 0.8rem; color: #10b981; background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        .quota-none { font-size: 0.8rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        .quota-exhausted { opacity: 0.7; border-color: rgba(239,68,68,0.2) !important; background: rgba(239,68,68,0.02) !important; }
+        .qty-control.disabled { pointer-events: none; filter: grayscale(1); opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -175,7 +203,8 @@
 
         <div class="items-grid">
             {% for p in products %}
-            <div class="item-card" id="card_{{ p.id }}">
+            {% set rem = quotas.get(p.id, 0) %}
+            <div class="item-card {% if rem <= 0 %}quota-exhausted{% endif %}" id="card_{{ p.id }}">
                 {% if p.image_url %}
                 <img src="{{ url_for('static', filename=p.image_url) }}" alt="{{ p.name }}"
                      style="width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:14px;border:1px solid var(--border);">
@@ -187,13 +216,22 @@
                 {% endif %}
                 <div class="item-name">{{ p.name }}</div>
                 <div class="item-price">₹{{ p.price }} / {{ p.unit }}</div>
-                <div class="item-limit">Max {{ p.max_limit }} {{ p.unit }}</div>
-                <div class="qty-control">
-                    <button type="button" class="qty-btn" onclick="changeQty('product_{{ p.id }}', -1, {{ p.max_limit }})">−</button>
+                
+                <div class="item-quota">
+                    {% if rem > 0 %}
+                        <span class="quota-avail">Available: {{ rem }} {{ p.unit }}</span>
+                    {% else %}
+                        <span class="quota-none">Quota Finished</span>
+                    {% endif %}
+                </div>
+
+                <div class="qty-control {% if rem <= 0 %}disabled{% endif %}">
+                    <button type="button" class="qty-btn" onclick="changeQty({{ p.id }}, -1, {{ rem }})" {% if rem <= 0 %}disabled{% endif %}>−</button>
                     <input type="number" id="product_{{ p.id }}" name="product_{{ p.id }}"
-                           class="qty-input" value="0" min="0" max="{{ p.max_limit }}" onchange="updateSummary()">
-                    <button type="button" class="qty-btn" onclick="changeQty('product_{{ p.id }}', 1, {{ p.max_limit }})">+</button>
-                    <span style="font-size:0.75rem;color:var(--text3);">{{ p.unit }}</span>
+                           class="qty-input" value="0" min="0" max="{{ rem }}"
+                           {% if rem <= 0 %}disabled{% endif %}
+                           oninput="updateSummary()" onchange="updateSummary()">
+                    <button type="button" class="qty-btn" onclick="changeQty({{ p.id }}, 1, {{ rem }})" {% if rem <= 0 %}disabled{% endif %}>+</button>
                 </div>
             </div>
             {% endfor %}
@@ -222,8 +260,8 @@
             </div>
         </div>
 
-        <button type="submit" class="btn-order" style="margin-top:16px;">
-            🛒 Proceed to Payment →
+        <button type="submit" class="btn-order" id="submitBtn" style="margin-top:16px;opacity:0.45;cursor:not-allowed;" disabled>
+            🛒 Select items to proceed
         </button>
     </form>
 </div>
@@ -261,11 +299,6 @@ document.querySelectorAll('[id^="iconEmoji_"]').forEach(function(el) {
 });
 
 /* ── THEME TOGGLE ── */
-(function(){
-    var saved = localStorage.getItem('rnTheme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    updateThemeUI(saved);
-})();
 function toggleTheme() {
     var cur = document.documentElement.getAttribute('data-theme');
     var next = cur === 'dark' ? 'light' : 'dark';
@@ -274,36 +307,75 @@ function toggleTheme() {
     updateThemeUI(next);
 }
 function updateThemeUI(t) {
-    document.getElementById('themeLabel').textContent  = t === 'dark' ? '🌙' : '☀️';
-    document.getElementById('themeLabelR').textContent = t === 'dark' ? 'Dark' : 'Light';
+    var lbl = document.getElementById('themeLabel');
+    var lblr = document.getElementById('themeLabelR');
+    if (lbl) lbl.textContent  = t === 'dark' ? '🌙' : '☀️';
+    if (lblr) lblr.textContent = t === 'dark' ? 'Dark' : 'Light';
 }
+// Sync UI labels on load
+updateThemeUI(document.documentElement.getAttribute('data-theme') || 'dark');
 
 /* ── QTY CONTROL ── */
-const products = [
+var products = [
     {% for p in products %}
-    { id: '{{ p.id }}', name: '{{ p.name }}', price: {{ p.price }}, unit: '{{ p.unit }}' }{% if not loop.last %},{% endif %}
+    { id: parseInt('{{ p.id }}'), name: '{{ p.name }}', price: parseFloat('{{ p.price }}'), unit: '{{ p.unit }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
-function changeQty(id, delta, max) {
-    var el = document.getElementById(id);
-    el.value = Math.max(0, Math.min(max, parseInt(el.value || 0) + delta));
+
+function changeQty(pid, delta, max) {
+    const input = document.getElementById('product_' + pid);
+    if (!input) return;
+    
+    let current = parseInt(input.value) || 0;
+    let next = Math.max(0, Math.min(max, current + delta));
+    input.value = next;
+    
+    // Visual feedback
+    const card = document.getElementById('card_' + pid);
+    if (card) {
+        card.style.borderColor = next > 0 ? 'var(--blue2)' : 'var(--border)';
+        card.style.boxShadow = next > 0 ? '0 0 15px rgba(59,130,246,0.1)' : '';
+    }
+    
     updateSummary();
 }
+
 function updateSummary() {
-    var total = 0, any = false;
-    products.forEach(function(p) {
-        var qty = parseInt(document.getElementById('product_' + p.id).value) || 0;
-        var amt = qty * p.price;
-        total += amt;
-        var row = document.getElementById('row_' + p.id);
-        document.getElementById('total_' + p.id).textContent = '₹' + amt.toFixed(2) + ' (' + qty + ' ' + p.unit + ')';
-        row.style.display = qty > 0 ? '' : 'none';
-        if (qty > 0) any = true;
+    let grandTotal = 0;
+    let hasItems = false;
+    
+    products.forEach(p => {
+        const input = document.getElementById('product_' + p.id);
+        const qty = input ? (parseInt(input.value) || 0) : 0;
+        const itemTotal = qty * p.price;
+        grandTotal += itemTotal;
+        
+        const row = document.getElementById('row_' + p.id);
+        const text = document.getElementById('total_' + p.id);
+        
+        if (qty > 0) {
+            hasItems = true;
+            if (row) row.style.display = 'flex';
+            if (text) text.textContent = `${qty} ${p.unit} × ₹${p.price.toFixed(2)} = ₹${itemTotal.toFixed(2)}`;
+        } else {
+            if (row) row.style.display = 'none';
+        }
     });
-    var fmt = '₹' + total.toFixed(2);
-    document.getElementById('grandTotal').textContent = fmt;
-    document.getElementById('grandTotal2').textContent = fmt;
-    document.getElementById('emptyRow').style.display = any ? 'none' : '';
+    
+    const totalStr = '₹' + grandTotal.toFixed(2);
+    if (document.getElementById('grandTotal')) document.getElementById('grandTotal').textContent = totalStr;
+    if (document.getElementById('grandTotal2')) document.getElementById('grandTotal2').textContent = totalStr;
+    
+    const empty = document.getElementById('emptyRow');
+    if (empty) empty.style.display = hasItems ? 'none' : '';
+    
+    const btn = document.getElementById('submitBtn');
+    if (btn) {
+        btn.disabled = !hasItems;
+        btn.style.opacity = hasItems ? '1' : '0.45';
+        btn.style.cursor = hasItems ? 'pointer' : 'not-allowed';
+        btn.innerHTML = hasItems ? `🛒 Proceed to Payment &nbsp; <b>${totalStr}</b>` : '🛒 Select items to proceed';
+    }
 }
 </script>
 </body>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You — Ration System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --blue: #3b82f6;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            background: var(--card);
+            padding: 3rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            max-width: 500px;
+            width: 90%;
+        }
+        .icon {
+            font-size: 80px;
+            margin-bottom: 1.5rem;
+            animation: bounce 2s infinite;
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        p { color: #94a3b8; line-height: 1.6; margin-bottom: 2rem; }
+        .timer {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--blue);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🌾✅</div>
+        <h1>Thank You!</h1>
+        <p>Your ration has been dispensed successfully. Please collect your items and close the lids.</p>
+        
+        <div class="timer" id="timerBox">
+            Redirecting to home in <span id="seconds">15</span> seconds...
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 15;
+        const timerElement = document.getElementById('seconds');
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                window.location.href = "{{ url_for('main.vending_login') }}";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

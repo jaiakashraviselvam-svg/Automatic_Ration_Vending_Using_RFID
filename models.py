@@ -30,10 +30,12 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False)
     rfidCard = db.Column(db.String(100), unique=True, nullable=False)
+    physical_uid = db.Column(db.String(100), unique=True, nullable=True) # The long number from Pi
     password = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
     address = db.Column(db.String(255))
     is_admin = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True) # New status field
     shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'), nullable=True)
     orders = db.relationship('Order', backref='user', lazy=True)
 

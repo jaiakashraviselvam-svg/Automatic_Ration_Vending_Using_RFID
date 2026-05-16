@@ -13,6 +13,10 @@ rfid_scan_cache = {
     'status': 'waiting'
 }
 
+# ── ENROLLMENT CACHE ──
+# Temporarily holds the last scanned UID for the enrollment script
+enrollment_cache = {'last_uid': None, 'active': False}
+
 # --- Web Portal Routes ---
 
 @main.route('/')
@@ -53,13 +57,60 @@ def logout():
 def dashboard():
     if current_user.is_admin:
         return redirect(url_for('admin.dashboard'))
+    
     paid_order = Order.query.filter_by(user_id=current_user.id, status='PAID').first()
     products = Product.query.filter_by(is_active=True).order_by(Product.slot_number).all()
-    return render_template('dashboard.html', user=current_user, paidOrder=paid_order, products=products)
+    
+    # Calculate Remaining Quotas for the current month
+    from datetime import datetime
+    from sqlalchemy import func
+    first_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    quotas = {}
+    for p in products:
+        # Sum of this product taken/paid this month
+        taken = db.session.query(func.sum(OrderItem.quantity)).join(Order).filter(
+            Order.user_id == current_user.id,
+            OrderItem.product_id == p.id,
+            Order.status.in_(['PAID', 'DISPENSED']),
+            Order.created_at >= first_of_month
+        ).scalar() or 0
+        
+        # If Akash, quota is infinite (set to a high number)
+        if current_user.rfidCard == 'RFID001':
+            quotas[p.id] = 99
+        else:
+            quotas[p.id] = max(0, p.max_limit - taken)
+
+    return render_template('dashboard.html', user=current_user, paidOrder=paid_order, products=products, quotas=quotas)
 
 @main.route('/order', methods=['POST'])
 @login_required
 def place_order():
+    # ── INDIVIDUAL PRODUCT MONTHLY QUOTA CHECK ──
+    if current_user.rfidCard != 'RFID001':
+        from datetime import datetime
+        first_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Get all products bought this month
+        bought_items = db.session.query(Product.id).join(OrderItem).join(Order).filter(
+            Order.user_id == current_user.id,
+            Order.status.in_(['PAID', 'DISPENSED']),
+            Order.created_at >= first_of_month
+        ).all()
+        bought_product_ids = [item[0] for item in bought_items]
+
+        # Check if any new item is already bought
+        for key, value in request.form.items():
+            if key.startswith('product_'):
+                qty = int(value)
+                if qty > 0:
+                    pid = int(key.split('_')[1])
+                    if pid in bought_product_ids:
+                        p = Product.query.get(pid)
+                        flash(f'You have already received your {p.name} quota for this month.', 'error')
+                        return redirect(url_for('main.dashboard'))
+
     if Order.query.filter_by(user_id=current_user.id, status='PAID').first():
         flash('You have a paid order waiting at the vending machine. Please collect it first.', 'error')
         return redirect(url_for('main.dashboard'))
@@ -224,12 +275,17 @@ def dispense(slot_number):
     if all_dispensed:
         order.status = 'DISPENSED'
         db.session.commit()
+        # Clean up session but keep order ID for thank you message
+        session['last_order_id'] = order.id
         session.pop('vendingOrderId', None)
         session.pop('vendingUserId', None)
-        session['dispensedOrderId'] = order.id
         return redirect(url_for('main.vending_thankyou'))
         
     return redirect(url_for('main.vending_machine'))
+
+@main.route('/vending/thank-you')
+def vending_thankyou():
+    return render_template('thank_you.html')
 
 @main.route('/vending/thankyou')
 def vending_thankyou():
@@ -245,12 +301,20 @@ def vending_thankyou():
 
 @main.route('/api/rfid/scan', methods=['POST'])
 def rfid_scan():
-    data = request.get_json()
-    uid = data.get('uid')
+    data = request.get_json(force=True, silent=True) or {}
+    uid = data.get('uid') or data.get('rfid')
     if not uid:
         return jsonify({'error': 'UID missing'}), 400
         
-    user = User.query.filter_by(rfidCard=uid).first()
+    # ── IF ENROLLING, CATCH THE UID ──
+    if enrollment_cache['active']:
+        enrollment_cache['last_uid'] = str(uid)
+        return jsonify({'message': 'Scan captured for enrollment'}), 200
+        
+    # Check both Friendly ID (RFID001) and Physical UID (491472769346)
+    from sqlalchemy import or_
+    user = User.query.filter(or_(User.rfidCard == uid, User.physical_uid == uid)).first()
+    
     if not user:
         rfid_scan_cache['uid'] = uid
         rfid_scan_cache['status'] = 'unauthorized'
@@ -260,9 +324,9 @@ def rfid_scan():
     paid_order = Order.query.filter_by(user_id=user.id, status='PAID').first()
     if not paid_order:
         rfid_scan_cache['uid'] = uid
-        rfid_scan_cache['status'] = 'no_paid_order'
+        rfid_scan_cache['status'] = 'unauthorized' # Changed from no_paid_order to unauthorized
         rfid_scan_cache['timestamp'] = time.time()
-        return jsonify({'message': 'No paid order found'}), 403
+        return jsonify({'message': 'Unauthorized Access'}), 403
         
     rfid_scan_cache['uid'] = uid
     rfid_scan_cache['status'] = 'success'
@@ -286,3 +350,22 @@ def vending_status():
             rfid_scan_cache['status'] = 'waiting'
             return jsonify({'status': 'error', 'message': 'No paid order found. Please pay on the portal first.'})
     return jsonify({'status': 'waiting'})
+
+@main.route('/api/enroll/start', methods=['POST'])
+def enroll_start():
+    enrollment_cache['active'] = True
+    enrollment_cache['last_uid'] = None
+    return jsonify({'status': 'listening'})
+
+@main.route('/api/enroll/poll', methods=['GET'])
+def enroll_poll():
+    uid = enrollment_cache['last_uid']
+    if uid:
+        enrollment_cache['active'] = False # Stop listening
+        enrollment_cache['last_uid'] = None
+    return jsonify({'uid': uid})
+
+@main.route('/api/enroll/stop', methods=['POST'])
+def enroll_stop():
+    enrollment_cache['active'] = False
+    return jsonify({'status': 'stopped'})

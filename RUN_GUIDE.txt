@@ -1,0 +1,33 @@
+================================================================================
+          RATION VENDING SYSTEM - COMMAND CHEAT SHEET
+================================================================================
+
+--- 1. START THE SERVER (Laptop) ---
+# Run this FIRST. This starts the backend and the web portal.
+python app.py
+
+--- 2. START THE SCANNER (Raspberry Pi) ---
+# First, send the latest script to the Pi (if you changed anything):
+scp C:\Users\varun\Automatic_Ration_Vending_Using_RFID\rfid_sender.py sadxroot@192.168.137.74:/home/sadxroot/
+
+# Then, run this command ON THE PI terminal:
+python /home/sadxroot/rfid_sender.py --server http://192.168.137.1:5000
+
+--- 3. ENROLL A NEW CARD (Laptop) ---
+# Run this to link a physical card to a specific user (e.g. RFID001).
+# Note: Ensure app.py is running before you start this!
+python enroll_card.py
+
+--- 4. VIEW DATABASE (Laptop) ---
+# Run this anytime to see a full status report of users, products, and orders.
+python view_db.py
+
+--- 5. RESET STUCK ORDERS (Laptop) ---
+# If a user's order gets stuck and they can't place a new one:
+python reset_user_orders.py [RFID_ID]
+
+================================================================================
+IP CONFIGURATION:
+- Laptop Hotspot IP: 192.168.137.1
+- Raspberry Pi IP: 192.168.137.74
+================================================================================

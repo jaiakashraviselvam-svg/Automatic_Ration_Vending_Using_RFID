@@ -20,7 +20,7 @@ class Product(db.Model):
     unit = db.Column(db.String(20), default="kg")
     max_limit = db.Column(db.Integer, default=5)
     image_url = db.Column(db.String(255), default="")
-    slot_number = db.Column(db.Integer, unique=True) # 1 to 6 mapped to vending machine keys
+    slot_number = db.Column(db.Integer, unique=True) # 1 to 10 mapped to vending machine keys
     hex_color = db.Column(db.String(10), default="0x00e676") # e.g. 0xf9a825 for 3D model
     is_active = db.Column(db.Boolean, default=True)
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
@@ -34,6 +34,9 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
     address = db.Column(db.String(255))
+    pincode = db.Column(db.String(10))
+    state = db.Column(db.String(50), default="Tamil Nadu")
+    country = db.Column(db.String(50), default="India")
     is_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True) # New status field
     shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'), nullable=True)

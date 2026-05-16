@@ -54,11 +54,11 @@
                         <div class="a-hint">Maximum quantity a user can order per session.</div>
                     </div>
                     <div class="a-form-group">
-                        <label class="a-label">Vending Slot Number (1–6) *</label>
-                        <input type="number" name="slot_number" min="1" max="6" class="a-input"
+                        <label class="a-label">Vending Slot Number (1–10) *</label>
+                        <input type="number" name="slot_number" min="1" max="10" class="a-input"
                                value="{{ product.slot_number if product else '' }}"
                                placeholder="1" required>
-                        <div class="a-hint">Which slot in the vending machine (1 to 6).</div>
+                        <div class="a-hint">Which slot in the vending machine (1 to 10).</div>
                     </div>
                 </div>
 
@@ -117,7 +117,7 @@
                 <div class="a-card-title">💡 Tips</div>
             </div>
             <div class="a-card-body" style="font-size:0.82rem;color:#475569;line-height:1.7;">
-                <p style="margin-bottom:10px;">• <strong>Slot numbers 1–6</strong> map to the 6 hoppers inside the 3D vending machine.</p>
+                <p style="margin-bottom:10px;">• <strong>Slot numbers 1–10</strong> map to the 10 hoppers inside the 3D vending machine.</p>
                 <p style="margin-bottom:10px;">• <strong>Hex Color</strong> sets the visual hopper color. Use vivid colors so users can distinguish items.</p>
                 <p style="margin-bottom:10px;">• <strong>Max Limit</strong> is the maximum quantity per single order, enforced at checkout.</p>
                 <p>• Uploading a <strong>product image</strong> shows it on the user dashboard.</p>

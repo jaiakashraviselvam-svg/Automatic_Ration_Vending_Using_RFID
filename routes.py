@@ -23,6 +23,8 @@ enrollment_cache = {'last_uid': None, 'active': False}
 def index():
     return redirect(url_for('main.login'))
 
+
+
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -35,13 +37,20 @@ def login():
         password = request.form.get('password')
         
         user = User.query.filter_by(rfidCard=rfid_card).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            if user.is_admin:
-                return redirect(url_for('admin.dashboard'))
-            return redirect(url_for('main.dashboard'))
+        if user:
+            print(f"DEBUG: Found user {user.username}. Checking password...")
+            if check_password_hash(user.password, password):
+                print(f"DEBUG: Password match! Logging in...")
+                login_user(user)
+                if user.is_admin:
+                    return redirect(url_for('admin.dashboard'))
+                return redirect(url_for('main.dashboard'))
+            else:
+                print(f"DEBUG: Password mismatch for {rfid_card}")
         else:
-            flash('Invalid RFID card or password. Please try again.', 'error')
+            print(f"DEBUG: No user found with RFID {rfid_card}")
+            
+        flash('Invalid RFID card or password. Please try again.', 'error')
             
     return render_template('login.html')
 
@@ -286,15 +295,6 @@ def dispense(slot_number):
 @main.route('/vending/thank-you')
 def vending_thankyou():
     return render_template('thank_you.html')
-
-@main.route('/vending/thankyou')
-def vending_thankyou():
-    order_id = session.get('dispensedOrderId')
-    order = None
-    if order_id:
-        order = Order.query.get(order_id)
-        session.pop('dispensedOrderId', None)
-    return render_template('thankyou.html', order=order)
 
 
 # --- API Routes ---

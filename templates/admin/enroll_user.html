@@ -1,0 +1,78 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+<div class="admin-card" style="max-width: 600px; margin: 2rem auto; text-align: center; padding: 3rem;">
+    <div id="statusIcon" style="font-size: 5rem; margin-bottom: 1.5rem;">📡</div>
+    <h2 id="statusTitle">Waiting for RFID Scan...</h2>
+    <p id="statusMsg" style="color: #94a3b8; margin-bottom: 2rem;">
+        Please tap the physical card on the Raspberry Pi scanner now for <strong>{{ user.username }}</strong>.
+    </p>
+
+    <div class="form-group" style="text-align: left; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+        <label style="display:block; margin-bottom:8px; font-weight:600; color:#fff;">Assign Friendly RFID ID</label>
+        <input type="text" id="newRfidId" value="{{ user.rfidCard }}" 
+               style="width:100%; padding:10px; border-radius:8px; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.1); color:white;">
+        <small style="color: #64748b; display:block; margin-top:8px;">You can change 'PENDING_...' to a real ID like 'RFID009' here.</small>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('admin.users') }}" class="btn" style="color: #94a3b8; text-decoration: none;">Cancel and Return</a>
+    </div>
+</div>
+
+<script>
+    let pollInterval;
+    const userId = {{ user.id }};
+
+    function startEnrollment() {
+        // 1. Tell server to start listening
+        fetch('/api/enroll/start', { method: 'POST' })
+            .then(r => r.json())
+            .then(() => {
+                // 2. Start polling for the UID
+                pollInterval = setInterval(pollScan, 1000);
+            });
+    }
+
+    function pollScan() {
+        fetch('/api/enroll/poll')
+            .then(r => r.json())
+            .then(data => {
+                if (data.uid) {
+                    clearInterval(pollInterval);
+                    completeEnrollment(data.uid);
+                }
+            });
+    }
+
+    function completeEnrollment(uid) {
+        const newRfid = document.getElementById('newRfidId').value;
+        
+        document.getElementById('statusIcon').innerHTML = '⚙️';
+        document.getElementById('statusTitle').innerText = 'Processing...';
+        
+        fetch("{{ url_for('admin.save_enrollment') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                physical_uid: uid,
+                new_rfid_id: newRfid
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('statusIcon').innerHTML = '✅';
+                document.getElementById('statusTitle').innerText = 'User Activated!';
+                document.getElementById('statusMsg').innerHTML = `<strong>${data.username}</strong> is now Active and linked to card <code>${uid}</code>. Redirecting...`;
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('admin.users') }}";
+                }, 3000);
+            }
+        });
+    }
+
+    // Start on load
+    window.onload = startEnrollment;
+</script>
+{% endblock %}

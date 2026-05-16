@@ -1,0 +1,60 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="admin-card" style="max-width: 600px; margin: 2rem auto;">
+    <div class="card-header">
+        <h2>👤 Add New User</h2>
+        <p>Register a new citizen for the Ration System</p>
+    </div>
+    
+    <form method="POST" class="admin-form">
+        <div style="margin-bottom: 20px;">
+            <label class="form-label">👤 Full Name</label>
+            <input type="text" name="username" class="form-control" required placeholder="e.g. Varun Kumar">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label class="form-label">🔑 Password</label>
+                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+            <div>
+                <label class="form-label">📞 Mobile Number</label>
+                <input type="text" name="phone" class="form-control" placeholder="10-digit number">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Address</label>
+            <textarea name="address" rows="3" placeholder="Residential address"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Assign to Shop</label>
+            <select name="shop_id">
+                <option value="">Select a Shop (Optional)</option>
+                {% for shop in shops %}
+                <option value="{{ shop.id }}">{{ shop.name }} ({{ shop.location }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div style="margin-top: 2rem; display: flex; gap: 12px;">
+            <button type="submit" class="btn btn-primary" style="flex: 2;">Register User</button>
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline" style="flex: 1; text-align: center; line-height: 40px; text-decoration: none; color: #94a3b8;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .admin-form .form-group { margin-bottom: 1.25rem; }
+    .admin-form label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+    .admin-form input, .admin-form select, .admin-form textarea {
+        width: 100%; padding: 0.75rem; border-radius: 8px; 
+        background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.1);
+        color: white; font-size: 0.95rem;
+    }
+    .btn-primary { background: #3b82f6; color: white; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-outline { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+</style>
+{% endblock %}

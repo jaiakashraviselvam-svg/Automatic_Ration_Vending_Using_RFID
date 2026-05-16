@@ -20,20 +20,21 @@
             border-top-color:#00e676;border-radius:50%;animation:spin360 .9s linear infinite;}
         @keyframes spin360{to{transform:rotate(360deg);}}
         .vm-hint{color:rgba(255,255,255,.28);font-size:.74rem;margin:7px 0 2px;letter-spacing:.5px;}
-        .vm-status-bar{display:flex;gap:10px;justify-content:center;margin:12px 0 8px;flex-wrap:wrap;}
+        .vm-status-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%;margin:12px 0 8px;}
         .vm-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
-            border-radius:12px;padding:10px 22px;text-align:center;min-width:112px;}
+            border-radius:12px;padding:8px 5px;text-align:center;width:100%;}
         .vm-badge.avail{border-color:#00e676;background:rgba(0,230,118,.07);cursor:pointer;
             transition:background .2s,box-shadow .2s;}
         .vm-badge.avail:hover{background:rgba(0,230,118,.13);box-shadow:0 0 18px rgba(0,230,118,.22);}
         .vm-badge.done{border-color:#4caf50;opacity:.6;}
         .vm-badge.na{opacity:.28;}
-        .vm-bi{font-size:1.65rem;line-height:1;}
-        .vm-bn{font-size:.7rem;color:#90a4ae;margin-top:4px;letter-spacing:1px;font-weight:600;}
-        .vm-bq{font-size:.68rem;color:#607d8b;margin-top:2px;}
-        .vm-bs{font-size:.67rem;font-weight:700;margin-top:4px;}
+        .vm-bi{font-size:1.3rem;line-height:1;margin-bottom:4px;}
+        .vm-bn{font-size:.62rem;color:#90a4ae;letter-spacing:0.5px;font-weight:700;overflow:hidden;white-space:nowrap;}
+        .vm-bq{font-size:.6rem;color:#607d8b;}
+        .vm-bs{font-size:.58rem;font-weight:800;margin-top:4px;}
         .vm-badge.avail .vm-bs{color:#00e676;}.vm-badge.done .vm-bs{color:#4caf50;}.vm-badge.na .vm-bs{color:#546e7a;}
-        .vm-keys{display:flex;gap:14px;margin-top:6px;}
+        .vm-keys{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;width:100%;margin-top:10px;}
+        .keypad-btn { padding: 12px 0; font-size: 1rem; }
     </style>
 </head>
 <body class="vending-body">

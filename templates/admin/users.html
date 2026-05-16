@@ -3,9 +3,12 @@
 {% block content %}
 
 <div class="page-heading">
-    <div>
-        <h1>👥 Users Management</h1>
-        <p>View all registered users and assign them to ration shops.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>👥 Users Management</h1>
+            <p>View all registered users and assign them to ration shops.</p>
+        </div>
+        <a href="{{ url_for('admin.add_user') }}" class="btn" style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none;">+ Add New User</a>
     </div>
     <div style="background:#e0f2fe;color:#0369a1;padding:10px 18px;border-radius:10px;font-size:0.82rem;font-weight:600;border:1px solid #bae6fd;">
         👥 {{ users|length }} Registered Users
@@ -49,7 +52,8 @@
                     <td>
                         <div style="font-size:0.82rem;color:#475569;">
                             {% if u.phone %}<div>📞 {{ u.phone }}</div>{% endif %}
-                            {% if u.address %}<div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">📍 {{ u.address }}</div>{% endif %}
+                            {% if u.address %}<div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">📍 {{ u.address }}, {{ u.pincode }}</div>{% endif %}
+                            {% if u.state %}<div style="font-size:0.65rem;color:#94a3b8;">{{ u.state }}, {{ u.country }}</div>{% endif %}
                         </div>
                     </td>
                     <td>

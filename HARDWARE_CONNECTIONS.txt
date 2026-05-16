@@ -1,0 +1,40 @@
+================================================================================
+🔌 HARDWARE SCHEMATIC: RASPBERRY PI 4B + MFRC522 RFID
+================================================================================
+
+This guide detailing the physical SPI (Serial Peripheral Interface) connections 
+required for the RFID scanner to communicate with the Flask server.
+
+--- 📍 MFRC522 TO RASPBERRY PI PIN MAPPING ---
+
+| MFRC522 Pin | Pi Pin Number | Pi Pin Name     | Color Code (Sug.) |
+|-------------|---------------|-----------------|-------------------|
+| SDA (SS)    | Pin 24        | GPIO 8 (CE0)    | Orange            |
+| SCK         | Pin 23        | GPIO 11 (SCLK)  | Yellow            |
+| MOSI        | Pin 19        | GPIO 10 (MOSI)  | Blue              |
+| MISO        | Pin 21        | GPIO 9 (MISO)   | Green             |
+| IRQ         | --            | NOT CONNECTED   | --                |
+| GND         | Pin 6         | Ground          | Black             |
+| RST         | Pin 22        | GPIO 25         | White             |
+| 3.3V        | Pin 1         | 3V3 Power       | Red               |
+
+⚠️ WARNING: Connect ONLY to 3.3V. Using 5V will damage the RFID sensor.
+
+--- 🛠️ PI CONFIGURATION ---
+1. Enable SPI Interface:
+   Run: sudo raspi-config
+   Navigate to: Interfacing Options -> SPI -> Enable -> YES
+
+2. Install Hardware Libraries:
+   Run: sudo apt-get install python3-dev python3-pip
+   Run: pip3 install spidev mfrc522
+
+--- 🚦 TROUBLESHOOTING ---
+• If the RFID isn't scanning, double-check that the SDA and SCK pins are 
+  not swapped.
+• Ensure the soldering on the MFRC522 header pins is solid.
+• Run 'ls /dev/spi*' to confirm the Pi has initialized the SPI bus.
+
+================================================================================
+🔍 GUIDE CREATED FOR: AUTOMATIC RATION VENDING SYSTEM
+================================================================================

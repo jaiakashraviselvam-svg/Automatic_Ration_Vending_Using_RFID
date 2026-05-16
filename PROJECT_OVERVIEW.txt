@@ -1,0 +1,41 @@
+================================================================================
+🚀 FUTURISTIC RATION VENDING SYSTEM - PROJECT OVERVIEW
+================================================================================
+
+--- 🛠️ TECH STACK ---
+• Backend:      Python 3.11+ / Flask Framework
+• Database:     SQLite (SQLAlchemy ORM)
+• Frontend:     HTML5, Vanilla CSS, Jinja2
+• 3D Engine:    Three.js (WebGL)
+• Hardware:     Raspberry Pi 4B
+• Integration:  RFID (MFRC522), GPIO Control
+• Security:     Scrypt Password Hashing, RBAC (Admin Bypass)
+
+--- 📁 FILE DIRECTORY & PURPOSE ---
+
+[ BACKEND CORE ]
+• app.py           - Application factory & config initialization.
+• routes.py        - The "Brain": Handles login, vending logic, & admin routes.
+• models.py        - Database Schema (Users, Products, Orders, OrderItems).
+• forms.py         - Form validation logic.
+
+[ HARDWARE INTEGRATION ]
+• rfid_sender.py   - Runs on Pi: Scans physical RFID cards and polls the server.
+• enroll_card.py   - Runs on Pi: Utility for scanning & registering new physical UIDs.
+• setup_pi.sh      - Shell script for quick hardware dependency installation.
+
+[ UTILITIES & MAINTENANCE ]
+• view_db.py       - Master Audit Tool: Real-time DB reporting.
+• check_rfid14.py  - Recovery script for specific user issues.
+• reset_rfid15.py  - Password recovery utility.
+
+[ FRONTEND ]
+• templates/       - All Jinja2 HTML pages.
+• static/          - CSS styling and client-side assets.
+• templates/vending-machine.html - The 3D Smart-Pod interface (Three.js).
+
+--- 🚀 KEY INNOVATIONS ---
+1. Smart-Pod UI:  A holographic 3D vending interface that syncs with hardware.
+2. Admin Bypass:  Seamless RBAC allowing staff to operate machines without cards.
+3. Auto-Enroll:   Real-time physical UID mapping during administrative onboarding.
+================================================================================

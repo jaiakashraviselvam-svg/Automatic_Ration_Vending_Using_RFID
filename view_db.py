@@ -1,32 +1,48 @@
 from app import create_app
-from models import db, User, Product, Order, OrderItem, Shop
-from tabulate import tabulate
+from models import db, User, Product, Order, OrderItem
 
 app = create_app()
 
-def show_table(title, headers, data):
-    print("\n" + "="*80)
-    print(f" {title.center(78)} ")
-    print("="*80)
-    print(tabulate(data, headers=headers, tablefmt="grid"))
+def master_audit():
+    with app.app_context():
+        print("\n" + "█"*70)
+        print(" FULL SYSTEM DATABASE AUDIT ".center(70, "█"))
+        print("█"*70)
 
-with app.app_context():
-    # 1. USERS
-    users = User.query.all()
-    user_data = [[u.id, u.username, u.rfidCard, u.physical_uid or "None", "Active" if u.is_active else "Inactive"] for u in users]
-    show_table("USER ACCOUNTS", ["ID", "Name", "RFID ID", "Physical UID", "Status"], user_data)
+        # 1. USERS TABLE
+        print("\n[ 👤 TABLE: USERS ]")
+        print(f"{'ID':<3} | {'Username':<12} | {'RFID ID':<10} | {'Status':<8} | {'Physical UID'}")
+        print("-" * 70)
+        for u in User.query.all():
+            status = "ACTIVE" if u.is_active else "INACTIVE"
+            print(f"{u.id:<3} | {u.username:<12} | {u.rfidCard:<10} | {status:<8} | {u.physical_uid}")
 
-    # 2. PRODUCTS
-    prods = Product.query.all()
-    prod_data = [[p.id, p.name, f"₹{p.price}/{p.unit}", f"Slot {p.slot_number}", "Yes" if p.is_active else "No"] for p in prods]
-    show_table("PRODUCT INVENTORY", ["ID", "Item Name", "Price/Unit", "Vending Slot", "Active"], prod_data)
+        # 2. PRODUCTS TABLE
+        print("\n[ 📦 TABLE: PRODUCTS ]")
+        print(f"{'ID':<3} | {'Slot':<4} | {'Name':<12} | {'Limit':<6} | {'Price':<6} | {'Hex Color'}")
+        print("-" * 70)
+        for p in Product.query.all():
+            # Note: We use max_limit as there is no 'stock' field in models.py
+            print(f"{p.id:<3} | {p.slot_number:<4} | {p.name:<12} | {p.max_limit:<6} | ₹{p.price:<5} | {p.hex_color}")
 
-    # 3. ORDERS
-    orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
-    order_data = [[o.id, o.user.username, f"₹{o.totalAmount:.2f}", o.status, o.created_at.strftime('%Y-%m-%d %H:%M')] for o in orders]
-    show_table("RECENT ORDERS (Last 10)", ["ID", "Customer", "Total", "Status", "Date"], order_data)
+        # 3. ORDERS TABLE
+        print("\n[ 🛒 TABLE: ORDERS ]")
+        print(f"{'ID':<3} | {'User ID':<8} | {'Total':<8} | {'Status':<10} | {'Date'}")
+        print("-" * 70)
+        for o in Order.query.all():
+            print(f"{o.id:<3} | {o.user_id:<8} | ₹{o.totalAmount:<7} | {o.status:<10} | {o.created_at.strftime('%Y-%m-%d')}")
 
-    # 4. ORDER ITEMS (linked to orders)
-    items = OrderItem.query.order_by(OrderItem.id.desc()).limit(10).all()
-    item_data = [[i.id, f"Order #{i.order_id}", i.product.name, f"{i.quantity} {i.product.unit}", "Dispensed" if i.dispensed else "Pending"] for i in items]
-    show_table("INDIVIDUAL ITEMS IN ORDERS", ["ID", "Order Ref", "Product", "Qty", "Dispense Status"], item_data)
+        # 4. ORDER_ITEMS TABLE
+        print("\n[ 🔍 TABLE: ORDER_ITEMS (Detailed Logs) ]")
+        print(f"{'ID':<3} | {'Order':<6} | {'Prod ID':<8} | {'Qty':<4} | {'Dispensed'}")
+        print("-" * 70)
+        for item in OrderItem.query.all():
+            disp = "YES" if item.dispensed else "NO"
+            print(f"{item.id:<3} | {item.order_id:<6} | {item.product_id:<8} | {item.quantity:<4} | {disp}")
+
+        print("\n" + "█"*70)
+        print(" END OF AUDIT ".center(70, "█"))
+        print("█"*70 + "\n")
+
+if __name__ == "__main__":
+    master_audit()

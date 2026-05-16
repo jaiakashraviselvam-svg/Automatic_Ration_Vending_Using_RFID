@@ -237,15 +237,24 @@ def payment_success():
 
 # --- Vending Machine Routes ---
 
-@main.route('/vending')
 @main.route('/vending/login')
 def vending_login():
+    # RBAC: Admin bypasses the scan screen entirely
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('main.vending_machine'))
+        
     rfid_scan_cache['uid'] = None
     rfid_scan_cache['status'] = 'waiting'
     return render_template('vending-login.html')
 
 @main.route('/vending/machine')
 def vending_machine():
+    # RBAC Bypass for Admin
+    if current_user.is_authenticated and current_user.is_admin:
+        products = Product.query.filter_by(is_active=True).order_by(Product.slot_number).all()
+        class DummyOrder: items = []
+        return render_template('vending-machine.html', order=DummyOrder(), products=products)
+
     order_id = session.get('vendingOrderId')
     if not order_id:
         return redirect(url_for('main.vending_login'))

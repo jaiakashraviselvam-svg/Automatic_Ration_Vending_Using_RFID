@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful — Ration Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { background: linear-gradient(135deg, #f0fdf4, #eff6ff, #fefce8); min-height: 100vh; }
+        .page-center {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 24px;
+            background: none;
+        }
+        .page-center::before, .page-center::after { display: none; }
+        .success-wrap {
+            max-width: 580px; width: 100%;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .success-header {
+            background: linear-gradient(135deg, #15803d, #16a34a);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .success-header::before {
+            content:'';
+            position:absolute;
+            width:300px;height:300px;
+            background:rgba(255,255,255,0.07);
+            border-radius:50%;
+            top:-100px;right:-80px;
+        }
+        .success-header::after {
+            content:'';
+            position:absolute;
+            width:200px;height:200px;
+            background:rgba(255,255,255,0.05);
+            border-radius:50%;
+            bottom:-60px;left:-40px;
+        }
+        .success-icon { font-size:4rem; display:block; animation: popIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275); margin-bottom:14px; }
+        @keyframes popIn { 0%{transform:scale(0);} 70%{transform:scale(1.15);} 100%{transform:scale(1);} }
+        .success-title { font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:6px; }
+        .success-subtitle { color:rgba(255,255,255,0.78); font-size:0.9rem; }
+
+        .success-body { padding: 28px; }
+
+        /* Amount Badge */
+        .amount-pill {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #dcfce7, #d1fae5);
+            border: 2px solid #86efac;
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(22,163,74,0.15);
+        }
+        .amount-pill .amount-label { font-size:0.8rem;font-weight:600;color:#15803d;text-transform:uppercase;letter-spacing:1px; }
+        .amount-pill .amount-value { font-size:2rem;font-weight:800;color:#15803d; }
+
+        /* Order List */
+        .order-list { border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; margin-bottom:22px; }
+        .order-list-header {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            padding: 12px 16px;
+            font-size:0.78rem;font-weight:700;color:#1d4ed8;
+            text-transform:uppercase;letter-spacing:1px;
+            display:flex;justify-content:space-between;
+        }
+        .order-item {
+            display:flex;justify-content:space-between;align-items:center;
+            padding:12px 16px;
+            border-bottom:1px solid #f1f5f9;
+            font-size:0.9rem;
+        }
+        .order-item:last-child { border-bottom:none; }
+        .order-item .item-name { font-weight:600;color:#0f172a; }
+        .order-item .item-qty  { color:#64748b;font-size:0.82rem;margin-top:2px; }
+        .order-item .item-price{ font-weight:700;color:#1d4ed8; }
+
+        /* Steps */
+        .steps { background:#fafbfc; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:22px; }
+        .step-title { font-size:0.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px; }
+        .step-item {
+            display:flex;align-items:flex-start;gap:12px;
+            margin-bottom:10px;
+            font-size:0.85rem;color:#475569;
+        }
+        .step-item:last-child { margin-bottom:0; }
+        .step-num {
+            width:24px;height:24px;flex-shrink:0;
+            background:linear-gradient(135deg,#2563eb,#1d4ed8);
+            color:#fff;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:0.7rem;font-weight:800;
+            box-shadow:0 2px 6px rgba(37,99,235,0.35);
+        }
+
+        .btn-vend-wrap { display:flex;gap:12px;justify-content:center; }
+        .btn-go-vend {
+            flex:1;padding:15px;
+            background:linear-gradient(135deg,#2563eb,#1d4ed8);
+            color:#fff;border:none;border-radius:12px;
+            font-size:1rem;font-weight:700;cursor:pointer;
+            text-decoration:none;text-align:center;
+            font-family:inherit;
+            box-shadow:0 4px 16px rgba(37,99,235,0.4);
+            transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;
+        }
+        .btn-go-vend:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,0.5); }
+        .btn-dash {
+            padding:15px 20px;
+            background:var(--bg,#f1f5f9);
+            color:#64748b;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+            font-size:0.88rem;font-weight:600;
+            text-decoration:none;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.2s;
+        }
+        .btn-dash:hover { background:#e2e8f0;color:#0f172a; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <a href="{{ url_for('main.dashboard') }}" class="navbar-brand"><span class="icon">🌾</span> Ration Portal</a>
+    <div class="navbar-right"><a href="{{ url_for('main.logout') }}" class="btn-logout">Logout</a></div>
+</nav>
+
+<div class="page-center">
+    <div class="success-wrap">
+
+        <!-- Header -->
+        <div class="success-header">
+            <span class="success-icon">✅</span>
+            <div class="success-title">Payment Successful!</div>
+            <div class="success-subtitle">Your order has been confirmed and is ready to collect.</div>
+        </div>
+
+        <!-- Body -->
+        <div class="success-body">
+
+            <!-- Amount -->
+            <div class="amount-pill">
+                <div>
+                    <div class="amount-label">Amount Paid</div>
+                    <div class="amount-value">₹{{ order.totalAmount }}</div>
+                </div>
+                <div style="font-size:2rem;">🎉</div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="order-list">
+                <div class="order-list-header"><span>📦 Items Ordered</span><span>Amount</span></div>
+                {% for item in order.items %}
+                {% if item.quantity > 0 %}
+                <div class="order-item">
+                    <div>
+                        <div class="item-name">{{ item.product.name }}</div>
+                        <div class="item-qty">{{ item.quantity }} {{ item.product.unit }} × ₹{{ item.product.price }}</div>
+                    </div>
+                    <div class="item-price">₹{{ item.quantity * item.product.price }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Next Steps -->
+            <div class="steps">
+                <div class="step-title">📍 Next Steps</div>
+                <div class="step-item"><div class="step-num">1</div><span>Go to the Vending Machine terminal nearby.</span></div>
+                <div class="step-item"><div class="step-num">2</div><span>Present your RFID card to the scanner.</span></div>
+                <div class="step-item"><div class="step-num">3</div><span>Wait for authentication confirmation.</span></div>
+                <div class="step-item"><div class="step-num">4</div><span>Press the keypad number for each item to dispense.</span></div>
+                <div class="step-item"><div class="step-num">5</div><span>Collect your ration items from the collection tray.</span></div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-vend-wrap">
+                <a href="{{ url_for('main.vending_login') }}" class="btn-go-vend">🤖 Go to Vending Machine</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn-dash">🏠 Dashboard</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

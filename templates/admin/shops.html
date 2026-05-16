@@ -1,0 +1,103 @@
+{% extends "admin/layout.html" %}
+{% block breadcrumb %}Shops{% endblock %}
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <h1>🏪 Ration Shops</h1>
+        <p>Manage physical ration shops and their member capacity.</p>
+    </div>
+    <a href="{{ url_for('admin.add_shop') }}" class="btn-green">➕ Add Shop</a>
+</div>
+
+<!-- Shop Cards Grid -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-bottom:28px;">
+    {% for s in shops %}
+    {% set fill_pct = (s.users|length / s.max_members * 100)|int %}
+    <div style="background:#fff;border-radius:16px;padding:22px;border:1px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.06);transition:box-shadow 0.2s,transform 0.2s;" onmouseover="this.style.boxShadow='0 8px 28px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.06)';this.style.transform='none'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,#16a34a,#22c55e);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(22,163,74,0.3);">🏪</div>
+            {% if fill_pct >= 90 %}
+            <span class="badge-inactive">Near Full</span>
+            {% elif fill_pct >= 60 %}
+            <span class="badge-warn">{{ fill_pct }}% Full</span>
+            {% else %}
+            <span class="badge-active">{{ fill_pct }}% Used</span>
+            {% endif %}
+        </div>
+
+        <div style="font-size:1.05rem;font-weight:700;color:#1e293b;margin-bottom:4px;">{{ s.name }}</div>
+        <div style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">📍 {{ s.location }}</div>
+
+        <!-- Capacity Bar -->
+        <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#94a3b8;margin-bottom:6px;">
+                <span>Members</span>
+                <span><strong style="color:#1e293b;">{{ s.users|length }}</strong> / {{ s.max_members }}</span>
+            </div>
+            <div style="background:#f1f5f9;border-radius:20px;height:7px;overflow:hidden;">
+                <div style="width:{{ fill_pct }}%;height:100%;border-radius:20px;background:linear-gradient(90deg,
+                    {% if fill_pct >= 90 %}#dc2626,#ef4444
+                    {% elif fill_pct >= 60 %}#d97706,#f59e0b
+                    {% else %}#16a34a,#22c55e{% endif %});transition:width 0.5s;"></div>
+            </div>
+        </div>
+
+        <div style="font-size:0.75rem;color:#94a3b8;">Shop ID: #{{ s.id }}</div>
+    </div>
+    {% else %}
+    <div style="grid-column:1/-1;background:#fff;border-radius:16px;padding:60px;text-align:center;border:2px dashed #e2e8f0;">
+        <div style="font-size:3rem;margin-bottom:16px;">🏪</div>
+        <div style="font-weight:700;color:#1e293b;font-size:1.1rem;margin-bottom:8px;">No Shops Yet</div>
+        <div style="color:#64748b;font-size:0.88rem;margin-bottom:20px;">Register your first ration shop to start assigning users.</div>
+        <a href="{{ url_for('admin.add_shop') }}" class="btn-green">Register First Shop</a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Full Table View -->
+{% if shops %}
+<div class="a-card">
+    <div class="a-card-header">
+        <div class="a-card-title">📋 All Shops Table</div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="a-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Max Capacity</th>
+                    <th>Current Members</th>
+                    <th>Occupancy</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in shops %}
+                {% set fp = (s.users|length / s.max_members * 100)|int %}
+                <tr>
+                    <td><span style="font-weight:700;color:#94a3b8;">#{{ s.id }}</span></td>
+                    <td><strong>{{ s.name }}</strong></td>
+                    <td style="color:#64748b;">📍 {{ s.location }}</td>
+                    <td><span class="badge-warn">{{ s.max_members }} max</span></td>
+                    <td>
+                        <div style="font-weight:700;color:#1e293b;">{{ s.users|length }}</div>
+                    </td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="flex:1;background:#f1f5f9;border-radius:20px;height:6px;overflow:hidden;">
+                                <div style="width:{{ fp }}%;height:100%;border-radius:20px;background:linear-gradient(90deg,{% if fp >= 90 %}#dc2626,#ef4444{% elif fp >= 60 %}#d97706,#f59e0b{% else %}#16a34a,#22c55e{% endif %});"></div>
+                            </div>
+                            <span style="font-size:0.75rem;font-weight:600;color:#64748b;min-width:32px;">{{ fp }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

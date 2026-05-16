@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine — RFID Scan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .rfid-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 44px 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+        }
+
+        .scanner-icon {
+            font-size: 5rem;
+            margin-bottom: 6px;
+            display: block;
+            animation: iconFloat 2.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(96,165,250,0.6));
+        }
+        @keyframes iconFloat {
+            0%,100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-10px) scale(1.05); }
+        }
+
+        .scanner-ring {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            border: 3px solid rgba(96,165,250,0.3);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+            animation: ringPulse 2s ease-in-out infinite;
+        }
+        .scanner-ring::before {
+            content: '';
+            position: absolute;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            border: 2px solid rgba(96,165,250,0.15);
+            animation: ringExpand 2s ease-in-out infinite;
+        }
+        @keyframes ringPulse {
+            0%,100% { border-color: rgba(96,165,250,0.4); box-shadow: 0 0 0 0 rgba(96,165,250,0.3); }
+            50%      { border-color: rgba(96,165,250,0.8); box-shadow: 0 0 0 10px rgba(96,165,250,0); }
+        }
+        @keyframes ringExpand {
+            0%   { transform: scale(0.9); opacity: 0.6; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        .scanner-text { font-size: 1.4rem; font-weight: 800; color: #f1f5f9; margin-bottom: 8px; }
+        .scanner-subtext { color: #64748b; font-size: 0.88rem; margin-bottom: 28px; }
+
+        .scan-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(96,165,250,0.15);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #error-message {
+            background: rgba(220,38,38,0.15);
+            border: 1px solid rgba(220,38,38,0.3);
+            color: #fca5a5;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: none;
+        }
+        #success-message {
+            background: rgba(22,163,74,0.15);
+            border: 1px solid rgba(22,163,74,0.3);
+            color: #86efac;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .status-dot {
+            display: inline-flex; align-items: center; gap: 7px;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 16px;
+        }
+        .status-dot::before {
+            content: '';
+            width: 7px; height: 7px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: dotPulse 1.5s ease infinite;
+        }
+        @keyframes dotPulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 18px;
+            color: #475569;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #94a3b8; }
+    </style>
+</head>
+<body class="vending-body">
+
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;gap:24px;">
+
+    <div class="vending-header">
+        <h1>🤖 Ration Vending Machine</h1>
+        <p>Automatic RFID Authentication System</p>
+    </div>
+
+    <div class="rfid-card">
+        <div class="scanner-ring">
+            <span class="scanner-icon">📡</span>
+        </div>
+
+        <div class="scanner-text">Waiting for RFID Scan</div>
+        <div class="scanner-subtext">Hold your RFID card near the scanner to authenticate</div>
+
+        <div class="scan-spinner"></div>
+
+        <div id="error-message">🚫 <span id="error-text"></span></div>
+        <div id="success-message">✅ Scan Successful! Logging you in...</div>
+
+        <div class="status-dot">System Online — Ready to Scan</div>
+        <a href="{{ url_for('main.login') }}" class="back-link">← Back to Web Portal</a>
+    </div>
+
+</div>
+
+<script>
+function pollStatus() {
+    fetch('/api/vending/status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('error-message').style.display = 'none';
+                document.getElementById('success-message').style.display = 'block';
+                setTimeout(() => { window.location.href = data.redirect; }, 900);
+            } else if (data.status === 'error') {
+                document.getElementById('error-text').textContent = data.message;
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('success-message').style.display = 'none';
+                setTimeout(() => { document.getElementById('error-message').style.display = 'none'; }, 5000);
+                setTimeout(pollStatus, 2000);
+            } else {
+                setTimeout(pollStatus, 2000);
+            }
+        })
+        .catch(() => setTimeout(pollStatus, 3000));
+}
+pollStatus();
+</script>
+</body>
+</html>

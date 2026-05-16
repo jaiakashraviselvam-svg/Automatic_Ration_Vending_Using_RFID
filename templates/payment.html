@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Payment — Ration Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+
+        .pay-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 28px 20px;
+        }
+        @media(max-width:720px) { .pay-grid { grid-template-columns: 1fr; } }
+
+        /* Left gateway card */
+        .qr-card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #e2e8f0; }
+        .qr-header { background: linear-gradient(135deg, #1d4ed8, #2563eb); padding: 20px 24px; color: #fff; }
+        .qr-header h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
+        .qr-header p  { font-size: 0.8rem; opacity: 0.72; }
+
+        .qr-body { padding: 28px; text-align: center; }
+
+        .amount-badge {
+            display: inline-block;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1d4ed8;
+            font-size: 1.8rem;
+            font-weight: 800;
+            padding: 10px 32px;
+            border-radius: 30px;
+            border: 2px solid #bfdbfe;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.15);
+        }
+        .scan-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 6px; }
+
+        .upi-apps { display: flex; justify-content: center; gap: 14px; margin: 20px 0 4px; flex-wrap: wrap; }
+        .upi-app  { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.68rem; color: #64748b; font-weight: 600; }
+        .upi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .gpay    { background: #fff; border: 1.5px solid #dadce0; color: #4285f4; }
+        .phonepe { background: #5f259f; color: #fff; }
+        .paytm   { background: #00baf2; color: #fff; }
+        .bhim    { background: #00a651; color: #fff; font-size: 1rem; }
+
+        /* Summary card */
+        .summary-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 24px;
+            height: fit-content;
+            border: 1px solid #e2e8f0;
+        }
+        .summary-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dbeafe;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .s-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.88rem;
+            color: #475569;
+        }
+        .s-row:last-child { border-bottom: none; }
+        .s-total {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #1d4ed8;
+            background: #eff6ff;
+            margin: 8px -4px -4px;
+            padding: 12px 8px;
+            border-radius: 10px;
+            border: 1px solid #dbeafe;
+        }
+
+        .btn-paid {
+            width: 100%;
+            margin-top: 16px;
+            padding: 15px;
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(22,163,74,0.4);
+            letter-spacing: 0.3px;
+        }
+        .btn-paid:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,0.5); }
+
+        .secure-note {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 0.78rem;
+            color: #1d4ed8;
+            font-weight: 500;
+        }
+
+        /* Overlay */
+        .proc-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); z-index: 999; flex-direction: column; align-items: center; justify-content: center; gap: 16px; backdrop-filter: blur(8px); }
+        .proc-overlay.show { display: flex; }
+        .spinner { width: 56px; height: 56px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #60a5fa; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .proc-text { color: #fff; font-weight: 700; font-size: 1.1rem; }
+        .proc-sub  { color: #94a3b8; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<!-- Verifying overlay -->
+<div class="proc-overlay" id="procOverlay">
+    <div class="spinner"></div>
+    <div class="proc-text">Verifying Payment...</div>
+    <div class="proc-sub">Please wait, do not close this page</div>
+</div>
+
+<!-- Hidden confirm form -->
+<form id="razorpayForm" action="{{ url_for('main.payment_verify') }}" method="post" style="display:none;">
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+    <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+</form>
+
+<nav class="navbar">
+    <a href="{{ url_for('main.dashboard') }}" class="navbar-brand"><span class="icon">🌾</span> Ration Portal</a>
+    <div class="navbar-right"><a href="{{ url_for('main.logout') }}" class="btn-logout">Logout</a></div>
+</nav>
+
+<div class="pay-grid">
+
+    <!-- LEFT: Payment Gateway -->
+    <div class="qr-card">
+        <div class="qr-header">
+            <h2>💳 Secure Payment Gateway</h2>
+            <p>Pay with UPI, Cards, or Netbanking via Razorpay</p>
+        </div>
+        <div class="qr-body">
+            <div style="font-size:3.5rem;margin-bottom:16px;">🔐</div>
+            <div style="font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:4px;">Razorpay Secure Checkout</div>
+            <div class="scan-hint" style="font-size:0.88rem;margin-bottom:24px;color:#64748b;max-width:300px;margin:8px auto 24px;">
+                Click "Pay Now" to open the Razorpay checkout. Your payment is 100% secure.
+            </div>
+
+            <div class="amount-badge">&#x20B9;{{ order.totalAmount }}</div>
+
+            <div class="upi-apps">
+                <div class="upi-app"><div class="upi-icon gpay">G</div><span>Google Pay</span></div>
+                <div class="upi-app"><div class="upi-icon phonepe">&#9654;</div><span>PhonePe</span></div>
+                <div class="upi-app"><div class="upi-icon paytm">P</div><span>Paytm</span></div>
+                <div class="upi-app"><div class="upi-icon bhim">BHIM</div><span>BHIM</span></div>
+            </div>
+            <div class="scan-hint" style="margin-top:14px;">All major payment methods accepted</div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Order Summary + Pay -->
+    <div>
+        <div class="summary-card">
+            <div class="summary-title">🧾 Order Summary</div>
+
+            {% for item in order.items %}
+            {% if item.quantity > 0 %}
+            <div class="s-row">
+                <span>{{ item.product.name }} &mdash; {{ item.quantity }} {{ item.product.unit }}</span>
+                <span style="font-weight:700;color:#0f172a;">&#x20B9;{{ item.quantity * item.product.price }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            <div class="s-row s-total">
+                <span>Total Amount</span>
+                <span>&#x20B9;{{ order.totalAmount }}</span>
+            </div>
+
+            <button class="btn-paid" onclick="startPayment()">
+                🔒 Pay Now &mdash; &#x20B9;{{ order.totalAmount }}
+            </button>
+
+            <div class="secure-note">
+                🛡️ 100% Secure &bull; Powered by Razorpay &bull; SSL Encrypted
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "{{ razorpay_key_id }}",
+    "amount": "{{ order.totalAmount * 100 }}",
+    "currency": "INR",
+    "name": "Ration Portal",
+    "description": "Government Ration Order",
+    "order_id": "{{ razorpay_order_id }}",
+    "handler": function(response) {
+        document.getElementById('procOverlay').classList.add('show');
+        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+        document.getElementById('razorpay_order_id').value  = response.razorpay_order_id;
+        document.getElementById('razorpay_signature').value = response.razorpay_signature;
+        document.getElementById('razorpayForm').submit();
+    },
+    "prefill": { "name": "{{ current_user.username }}" },
+    "theme": { "color": "#2563eb" }
+};
+var rzp1 = new Razorpay(options);
+rzp1.on('payment.failed', function(response) {
+    alert("Payment failed: " + response.error.description);
+});
+function startPayment() { rzp1.open(); }
+</script>
+</body>
+</html>

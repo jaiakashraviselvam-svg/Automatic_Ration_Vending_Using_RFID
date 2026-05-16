@@ -1,0 +1,169 @@
+{% extends "admin/layout.html" %}
+{% block breadcrumb %}{{ action }} Product{% endblock %}
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <h1>{{ '✏️ Edit' if action == 'Edit' else '➕ Add' }} Product</h1>
+        <p>{{ 'Update existing product details.' if action == 'Edit' else 'Fill in the details to add a new product to the catalog.' }}</p>
+    </div>
+    <a href="{{ url_for('admin.products') }}" class="btn-ghost">← Back to Products</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
+
+    <!-- Main Form Card -->
+    <div class="a-card">
+        <div class="a-card-header">
+            <div class="a-card-title">📋 Product Details</div>
+        </div>
+        <div class="a-card-body">
+            <form method="POST" enctype="multipart/form-data">
+
+                <div class="a-form-group">
+                    <label class="a-label">Product Name *</label>
+                    <input type="text" name="name" class="a-input"
+                           value="{{ product.name if product else '' }}"
+                           placeholder="e.g. Rice, Wheat, Sugar..." required>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="a-form-group">
+                        <label class="a-label">Price (₹) *</label>
+                        <input type="number" step="0.5" name="price" class="a-input"
+                               value="{{ product.price if product else '' }}"
+                               placeholder="0.00" required>
+                    </div>
+                    <div class="a-form-group">
+                        <label class="a-label">Unit *</label>
+                        <select name="unit" class="a-select">
+                            <option value="kg" {% if product and product.unit == 'kg' %}selected{% endif %}>kg (kilogram)</option>
+                            <option value="L" {% if product and product.unit == 'L' %}selected{% endif %}>L (litre)</option>
+                            <option value="pc" {% if product and product.unit == 'pc' %}selected{% endif %}>pc (piece)</option>
+                            <option value="g" {% if product and product.unit == 'g' %}selected{% endif %}>g (gram)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="a-form-group">
+                        <label class="a-label">Max Limit per User *</label>
+                        <input type="number" name="max_limit" class="a-input"
+                               value="{{ product.max_limit if product else '5' }}"
+                               placeholder="5" required>
+                        <div class="a-hint">Maximum quantity a user can order per session.</div>
+                    </div>
+                    <div class="a-form-group">
+                        <label class="a-label">Vending Slot Number (1–6) *</label>
+                        <input type="number" name="slot_number" min="1" max="6" class="a-input"
+                               value="{{ product.slot_number if product else '' }}"
+                               placeholder="1" required>
+                        <div class="a-hint">Which slot in the vending machine (1 to 6).</div>
+                    </div>
+                </div>
+
+                <div class="a-form-group">
+                    <label class="a-label">3D Hex Color for Vending Machine</label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <input type="color" id="colorPicker"
+                               value="{{ '#' + product.hex_color.replace('0x','') if product and product.hex_color else '#00e676' }}"
+                               style="width:46px;height:40px;border:none;border-radius:8px;cursor:pointer;background:none;padding:2px;"
+                               oninput="syncHex(this.value)">
+                        <input type="text" name="hex_color" id="hexInput" class="a-input" style="flex:1;"
+                               value="{{ product.hex_color if product else '0x00e676' }}"
+                               placeholder="0x00e676"
+                               oninput="syncPicker(this.value)">
+                    </div>
+                    <div class="a-hint">Format: <code>0xRRGGBB</code> — used to color the product hopper in the 3D vending machine.</div>
+                </div>
+
+                <div class="a-form-group">
+                    <label class="a-label">Product Image</label>
+                    {% if product and product.image_url %}
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+                        <img src="{{ url_for('static', filename=product.image_url) }}"
+                             style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #e2e8f0;">
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:600;color:#1e293b;">Current image</div>
+                            <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">Upload a new one below to replace it.</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div style="border:2px dashed #cbd5e1;border-radius:12px;padding:24px;text-align:center;background:#fafbfc;cursor:pointer;"
+                         onclick="document.getElementById('imgInput').click()">
+                        <div style="font-size:2rem;margin-bottom:8px;">📷</div>
+                        <div style="font-size:0.85rem;font-weight:600;color:#475569;">Click to upload image</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">PNG, JPG, GIF up to 5MB</div>
+                        <input type="file" id="imgInput" name="image" accept="image/*" style="display:none;"
+                               onchange="showPreview(this)">
+                    </div>
+                    <div id="imgPreview" style="display:none;margin-top:12px;">
+                        <img id="previewImg" style="max-width:100%;max-height:200px;border-radius:10px;border:2px solid #e2e8f0;">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button type="submit" class="btn-blue">💾 Save Product</button>
+                    <a href="{{ url_for('admin.products') }}" class="btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tips Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="a-card">
+            <div class="a-card-header">
+                <div class="a-card-title">💡 Tips</div>
+            </div>
+            <div class="a-card-body" style="font-size:0.82rem;color:#475569;line-height:1.7;">
+                <p style="margin-bottom:10px;">• <strong>Slot numbers 1–6</strong> map to the 6 hoppers inside the 3D vending machine.</p>
+                <p style="margin-bottom:10px;">• <strong>Hex Color</strong> sets the visual hopper color. Use vivid colors so users can distinguish items.</p>
+                <p style="margin-bottom:10px;">• <strong>Max Limit</strong> is the maximum quantity per single order, enforced at checkout.</p>
+                <p>• Uploading a <strong>product image</strong> shows it on the user dashboard.</p>
+            </div>
+        </div>
+
+        <div class="a-card" style="border:1.5px solid rgba(37,99,235,0.2);background:rgba(219,234,254,0.3);">
+            <div class="a-card-body">
+                <div style="font-size:0.8rem;font-weight:700;color:#1d4ed8;margin-bottom:8px;">🎨 Color Preview</div>
+                <div id="colorPreviewBox" style="width:100%;height:60px;border-radius:10px;background:#00e676;transition:background 0.3s;border:2px solid rgba(0,0,0,0.1);"></div>
+                <div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;text-align:center;">This color will appear on the 3D hopper</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function syncHex(cssColor) {
+    var hex = '0x' + cssColor.replace('#','').toUpperCase();
+    document.getElementById('hexInput').value = hex;
+    document.getElementById('colorPreviewBox').style.background = cssColor;
+}
+function syncPicker(hexStr) {
+    var css = hexStr.replace('0x','#').replace('0X','#');
+    if (/^#[0-9A-Fa-f]{6}$/.test(css)) {
+        document.getElementById('colorPicker').value = css;
+        document.getElementById('colorPreviewBox').style.background = css;
+    }
+}
+function showPreview(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('imgPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+// Init color preview
+(function(){
+    var hexVal = document.getElementById('hexInput').value;
+    var css = hexVal.replace('0x','#').replace('0X','#');
+    document.getElementById('colorPreviewBox').style.background = css;
+})();
+</script>
+
+{% endblock %}

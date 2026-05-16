@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ration Portal — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .page-center { background: var(--bg); }
+
+        /* Extra animated orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.18;
+            pointer-events: none;
+            animation: orbFloat 12s ease-in-out infinite;
+        }
+        .orb-1 { width:600px;height:600px;background:#3b82f6;top:-200px;left:-200px;animation-duration:14s; }
+        .orb-2 { width:500px;height:500px;background:#10b981;bottom:-150px;right:-150px;animation-delay:3s;animation-duration:11s; }
+        .orb-3 { width:350px;height:350px;background:#8b5cf6;top:40%;left:60%;animation-delay:6s; }
+        @keyframes orbFloat {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33%      { transform: translate(30px,-20px) scale(1.05); }
+            66%      { transform: translate(-20px,15px) scale(0.96); }
+        }
+
+        /* Grid lines */
+        .grid-bg {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .login-box {
+            animation: slideUp 0.55s cubic-bezier(0.16,1,0.3,1);
+            z-index: 10;
+        }
+        @keyframes slideUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+
+        .tn-badge {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 10px 14px;
+            margin-bottom: 24px;
+        }
+        .tn-badge img { width: 32px; height: 32px; object-fit: contain; filter: brightness(0.9); }
+        .tn-badge-text { font-size: 0.72rem; color: var(--text2); line-height: 1.4; }
+        .tn-badge-text strong { display: block; color: var(--text); font-size: 0.78rem; }
+
+        .input-wrap { position: relative; }
+        .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; }
+        .form-control { padding-left: 40px !important; }
+
+        .divider { display:flex;align-items:center;gap:12px;margin:20px 0; }
+        .divider::before,.divider::after { content:'';flex:1;height:1px;background:var(--border); }
+        .divider span { font-size:0.68rem;color:var(--text3);font-weight:600;letter-spacing:1px;text-transform:uppercase; }
+
+        .demo-creds {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .demo-tag {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 7px 10px;
+            font-size: 0.72rem; color: var(--text2);
+            font-family: monospace;
+        }
+        .demo-tag span { display: block; color: var(--text3); font-size: 0.65rem; margin-bottom: 2px; }
+
+        .admin-link {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin-top: 20px; padding: 11px;
+            background: rgba(139,92,246,0.08);
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: var(--radius-sm);
+            color: var(--purple2); font-size: 0.82rem; font-weight: 600;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .admin-link:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.35); }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="page-center" style="background:transparent;">
+    <div class="login-box">
+
+        <!-- TN Govt Badge -->
+        <div class="tn-badge">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Emblem_of_Tamil_Nadu.svg/200px-Emblem_of_Tamil_Nadu.svg.png" alt="TN Govt">
+            <div class="tn-badge-text">
+                <strong>Government of Tamil Nadu</strong>
+                Public Distribution System — RFID Vending
+            </div>
+        </div>
+
+        <div class="login-header">
+            <div class="login-logo">🌾</div>
+            <div class="login-title">Ration Portal</div>
+            <div class="login-subtitle">Scan your RFID card or enter credentials below</div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('main.login') }}" method="post">
+            <div class="form-group">
+                <label class="form-label" for="rfidCard"><span>📟</span>RFID Card Number</label>
+                <div class="input-wrap">
+                    <span class="input-icon">🪪</span>
+                    <input type="text" id="rfidCard" name="rfidCard" class="form-control"
+                           placeholder="e.g. RFID001" required autofocus>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password"><span>🔒</span>Password</label>
+                <div class="input-wrap">
+                    <span class="input-icon">🔑</span>
+                    <input type="password" id="password" name="password" class="form-control"
+                           placeholder="Enter your password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Sign In to Portal →</button>
+        </form>
+
+        <a href="{{ url_for('admin.login') }}" class="admin-link">⚙️ Admin Portal Access</a>
+
+        <div class="divider"><span>Demo Accounts</span></div>
+        <div class="demo-creds">
+            <div class="demo-tag"><span>RFID</span>RFID001 / akash123</div>
+            <div class="demo-tag"><span>RFID</span>RFID002 / priya123</div>
+            <div class="demo-tag"><span>RFID</span>RFID003 / rahul123</div>
+            <div class="demo-tag"><span>Admin</span>Admin / admin123</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

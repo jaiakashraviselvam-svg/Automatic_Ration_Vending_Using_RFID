@@ -4,37 +4,341 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vending Machine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Digital-7&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        #vm3d-wrap{width:100%;max-width:900px;display:flex;flex-direction:column;align-items:center;}
-        #vm3d-box{width:100%;height:540px;border-radius:16px;overflow:hidden;
-            box-shadow:0 0 50px rgba(0,230,118,.12),0 24px 64px rgba(0,0,0,.7);
-            border:1px solid rgba(0,230,118,.18);cursor:grab;position:relative;}
-        #vm3d-box:active{cursor:grabbing;}
-        #vm3d{display:block;width:100%;height:100%;}
-        #vm3d-loading{position:absolute;inset:0;display:flex;align-items:center;
-            justify-content:center;color:#00e676;font-family:'Courier New',monospace;
-            font-size:1rem;letter-spacing:2px;background:rgba(7,11,23,1);z-index:10;
-            flex-direction:column;gap:12px;}
-        #vm3d-loading .spin{width:36px;height:36px;border:3px solid #1b5e20;
-            border-top-color:#00e676;border-radius:50%;animation:spin360 .9s linear infinite;}
-        @keyframes spin360{to{transform:rotate(360deg);}}
-        .vm-hint{color:rgba(255,255,255,.28);font-size:.74rem;margin:7px 0 2px;letter-spacing:.5px;}
-        .vm-status-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%;margin:12px 0 8px;}
-        .vm-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
-            border-radius:12px;padding:8px 5px;text-align:center;width:100%;}
-        .vm-badge.avail{border-color:#00e676;background:rgba(0,230,118,.07);cursor:pointer;
-            transition:background .2s,box-shadow .2s;}
-        .vm-badge.avail:hover{background:rgba(0,230,118,.13);box-shadow:0 0 18px rgba(0,230,118,.22);}
-        .vm-badge.done{border-color:#4caf50;opacity:.6;}
-        .vm-badge.na{opacity:.28;}
-        .vm-bi{font-size:1.3rem;line-height:1;margin-bottom:4px;}
-        .vm-bn{font-size:.62rem;color:#90a4ae;letter-spacing:0.5px;font-weight:700;overflow:hidden;white-space:nowrap;}
-        .vm-bq{font-size:.6rem;color:#607d8b;}
-        .vm-bs{font-size:.58rem;font-weight:800;margin-top:4px;}
-        .vm-badge.avail .vm-bs{color:#00e676;}.vm-badge.done .vm-bs{color:#4caf50;}.vm-badge.na .vm-bs{color:#546e7a;}
-        .vm-keys{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;width:100%;margin-top:10px;}
-        .keypad-btn { padding: 12px 0; font-size: 1rem; }
+        body.vending-body {
+            background: #121212;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .dispense-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .dispense-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .dispense-anim {
+            font-size: 8rem;
+            animation: dropAnim 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes dropAnim {
+            0% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+            30% { transform: translateY(0px) scale(1.2); opacity: 1; }
+            50% { transform: translateY(-20px) scale(1); }
+            70% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(200px) scale(0.8); opacity: 0; }
+        }
+
+        #dispenseMsg {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00e676;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 10px #00e676;
+        }
+
+        /* Vending Machine Design */
+        .vm-container {
+            width: 100%;
+            max-width: 1000px;
+            background: linear-gradient(145deg, #2a2d32, #1a1c20);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 
+                0 0 0 4px #0d0f12,
+                0 20px 50px rgba(0,0,0,0.8),
+                inset 0 2px 0 rgba(255,255,255,0.1);
+            display: flex;
+            gap: 20px;
+            border: 2px solid #3e4249;
+            position: relative;
+        }
+
+        /* Glass Door Area */
+        .vm-glass-door {
+            flex: 1;
+            background: #0a0a0c;
+            border-radius: 12px;
+            border: 12px solid #1a1c20;
+            box-shadow: inset 0 0 40px rgba(0,0,0,1), 0 0 0 2px #000;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Glass Reflection */
+        .vm-glass-door::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -50%; width: 200%; height: 100%;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.08) 50%, transparent 54%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .vm-shelf {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 6px solid #15181d;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        
+        .vm-shelf::before {
+            content: '';
+            position: absolute;
+            bottom: -6px; left: 0; right: 0; height: 2px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .vm-slot {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .vm-slot.active {
+            background: rgba(0, 230, 118, 0.05);
+            box-shadow: inset 0 0 20px rgba(0, 230, 118, 0.1);
+        }
+
+        .vm-slot.disabled {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .vm-spiral {
+            position: absolute;
+            bottom: 65px;
+            width: 80%;
+            height: 20px;
+            background: repeating-linear-gradient(90deg, transparent, transparent 15px, #555 15px, #777 20px);
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        .vm-item-icon {
+            font-size: 3rem;
+            z-index: 2;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .vm-slot:hover .vm-item-icon {
+            transform: translateY(-5px);
+        }
+
+        .vm-item-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #90a4ae;
+            margin-bottom: 5px;
+            z-index: 2;
+        }
+
+        .vm-item-qty {
+            font-size: 0.7rem;
+            color: #00e676;
+            font-weight: bold;
+            background: rgba(0, 230, 118, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 2;
+            margin-bottom: 10px;
+        }
+
+        .vm-slot-number {
+            background: #fff;
+            color: #000;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        /* Control Panel */
+        .vm-control-panel {
+            width: 260px;
+            background: #1a1c20;
+            border-radius: 12px;
+            border: 2px solid #2a2d32;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .vm-lcd {
+            background: #0d1b2a;
+            border: 4px solid #000;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 230, 118, 0.2);
+        }
+
+        .vm-lcd-text {
+            font-family: 'Courier New', Courier, monospace;
+            color: #00e676;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 230, 118, 0.5);
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .vm-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #222;
+        }
+
+        .vm-key {
+            background: linear-gradient(180deg, #3a3d42, #2a2d32);
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 15px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #111, 0 5px 10px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .vm-key:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #111, 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .vm-key.action-btn {
+            grid-column: span 3;
+            background: linear-gradient(180deg, #00c853, #009624);
+            box-shadow: 0 4px 0 #00600f, 0 5px 10px rgba(0,0,0,0.5);
+        }
+        
+        .vm-key.action-btn:active {
+            box-shadow: 0 0 0 #00600f, 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .vm-key.remove-btn {
+            grid-column: span 3;
+            background: linear-gradient(180deg, #d32f2f, #b71c1c);
+            box-shadow: 0 4px 0 #7f0000, 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .vm-key.remove-btn:active {
+            box-shadow: 0 0 0 #7f0000, 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .vm-coin-slot {
+            width: 60px;
+            height: 120px;
+            background: #111;
+            border-radius: 8px;
+            border: 2px solid #333;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .vm-coin-slot::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            width: 8px;
+            height: 40px;
+            background: #000;
+            border-radius: 4px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,1);
+        }
+
+        /* Dispenser Flap */
+        .vm-dispenser {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 300px;
+            height: 100px;
+            background: #0a0a0c;
+            border: 4px solid #1a1c20;
+            border-radius: 8px;
+            box-shadow: inset 0 20px 20px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .vm-flap {
+            width: 95%;
+            height: 90%;
+            background: linear-gradient(180deg, #2a2d32, #1a1c20);
+            border-radius: 4px 4px 0 0;
+            border-top: 2px solid #3e4249;
+            transform-origin: top;
+            transition: transform 0.3s;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+        }
+
+        .vm-dispenser.open .vm-flap {
+            transform: rotateX(-45deg);
+        }
+
+        .vm-footer-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #607d8b;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body class="vending-body">
@@ -42,287 +346,195 @@
 <div class="dispense-overlay" id="dispenseOverlay">
     <div class="dispense-anim" id="dispenseIcon">&#x1F4E6;</div>
     <div id="dispenseMsg">Dispensing...</div>
-    <div style="font-size:.9rem;color:#69f0ae;margin-top:4px;">Please wait</div>
 </div>
 
 {% for p in products %}
-<form id="form-{{ p.slot_number }}" action="{{ url_for('main.dispense', slot_number=p.slot_number) }}" method="post" style="display:none;"></form>
+<form id="form-dispense-{{ p.slot_number }}" action="{{ url_for('main.dispense', slot_number=p.slot_number) }}" method="post" style="display:none;"></form>
+<form id="form-remove-{{ p.slot_number }}" action="{{ url_for('main.remove_item', slot_number=p.slot_number) }}" method="post" style="display:none;"></form>
 {% endfor %}
 
-<div class="vending-header">
-    <h1>&#x1F916; Ration Vending Machine</h1>
-    <p>Drag to rotate &nbsp;&bull;&nbsp; Scroll to zoom &nbsp;&bull;&nbsp; Click keypad to dispense</p>
-</div>
-
-<div id="vm3d-wrap">
-    <div id="vm3d-box">
-        <div id="vm3d-loading"><div class="spin"></div>Loading 3D Model...</div>
-        <canvas id="vm3d"></canvas>
-    </div>
-    <div class="vm-hint">&#x1F5B1; Drag to rotate &nbsp;&bull;&nbsp; Scroll to zoom</div>
-
-    <div class="vm-status-bar">
-        {% for p in products %}
-            {% set item = order.items | selectattr('product_id', 'equalto', p.id) | first %}
-            {% set icon = '🌾' if 'rice' in p.name.lower() else 
-                         '🍬' if 'sugar' in p.name.lower() else 
-                         '🧴' if 'oil' in p.name.lower() else 
-                         '🍞' if 'wheat' in p.name.lower() else 
-                         '🍲' if 'dal' in p.name.lower() else 
-                         '🧂' if 'salt' in p.name.lower() else '📦' %}
-            {% if item and item.quantity > 0 and not item.dispensed %}
-            <div class="vm-badge avail" onclick="dispense('{{ p.slot_number }}')">
-                <div class="vm-bi">{{ icon }}</div><div class="vm-bn">{{ p.name[:8] | upper }} [{{ p.slot_number }}]</div>
-                <div class="vm-bq">{{ item.quantity }} {{ p.unit }}</div><div class="vm-bs">&#9679; READY</div>
+<div>
+    <div class="vm-container">
+        <div class="vm-glass-door">
+            <!-- Render products in rows of 3 -->
+            <div class="vm-shelf">
+            {% for p in products %}
+                {% set item = order.items | selectattr('product_id', 'equalto', p.id) | list | first %}
+                {% set is_active = item and item.quantity > 0 and not item.dispensed %}
+                {% set is_done = item and item.dispensed %}
+                
+                {% set icon = '🌾' if 'rice' in p.name.lower() else 
+                             '🍬' if 'sugar' in p.name.lower() else 
+                             '🧴' if 'oil' in p.name.lower() else 
+                             '🍞' if 'wheat' in p.name.lower() else 
+                             '🍲' if 'dal' in p.name.lower() else 
+                             '🧂' if 'salt' in p.name.lower() else '📦' %}
+                
+                <div class="vm-slot {% if is_active %}active{% elif is_done or not item %}disabled{% endif %}" onclick="selectSlot('{{ p.slot_number }}')">
+                    <div class="vm-spiral"></div>
+                    <div class="vm-item-icon" id="icon-{{ p.slot_number }}">{{ icon }}</div>
+                    <div class="vm-item-name">{{ p.name[:12] }}</div>
+                    <div class="vm-item-qty">
+                        {% if is_active %}
+                            {{ item.quantity }} {{ p.unit }} Ready
+                        {% elif is_done %}
+                            Done
+                        {% else %}
+                            Empty
+                        {% endif %}
+                    </div>
+                    <div class="vm-slot-number">{{ p.slot_number }}</div>
+                </div>
+                
+                {% if loop.index % 3 == 0 and not loop.last %}
+                    </div><div class="vm-shelf">
+                {% endif %}
+            {% endfor %}
             </div>
-            {% elif item and item.quantity > 0 and item.dispensed %}
-            <div class="vm-badge done">
-                <div class="vm-bi">{{ icon }}</div><div class="vm-bn">{{ p.name[:8] | upper }}</div>
-                <div class="vm-bq">{{ item.quantity }} {{ p.unit }}</div><div class="vm-bs">&#10003; DISPENSED</div>
+        </div>
+        
+        <div class="vm-control-panel">
+            <div class="vm-lcd">
+                <div class="vm-lcd-text" id="lcdScreen">
+                    <span>PLEASE SELECT</span>
+                    <span>AN ITEM</span>
+                </div>
             </div>
-            {% else %}
-            <div class="vm-badge na">
-                <div class="vm-bi">{{ icon }}</div><div class="vm-bn">{{ p.name[:8] | upper }}</div><div class="vm-bq">&#8212;</div><div class="vm-bs">N/A</div>
+            
+            <div class="vm-keypad">
+                <button class="vm-key" onclick="pressKey(1)">1</button>
+                <button class="vm-key" onclick="pressKey(2)">2</button>
+                <button class="vm-key" onclick="pressKey(3)">3</button>
+                <button class="vm-key" onclick="pressKey(4)">4</button>
+                <button class="vm-key" onclick="pressKey(5)">5</button>
+                <button class="vm-key" onclick="pressKey(6)">6</button>
+                <button class="vm-key" onclick="pressKey(7)">7</button>
+                <button class="vm-key" onclick="pressKey(8)">8</button>
+                <button class="vm-key" onclick="pressKey(9)">9</button>
+                <button class="vm-key" style="visibility: hidden;">*</button>
+                <button class="vm-key" onclick="pressKey(0)">0</button>
+                <button class="vm-key" style="visibility: hidden;">#</button>
+                
+                <button class="vm-key action-btn" id="btnDispense" onclick="actionDispense()" disabled>DISPENSE</button>
+                <button class="vm-key remove-btn" id="btnRemove" onclick="actionRemove()" disabled>REMOVE / CANCEL</button>
             </div>
-            {% endif %}
-        {% endfor %}
+            
+            <div class="vm-coin-slot"></div>
+        </div>
+        
+        <div class="vm-dispenser" id="dispenserFlap">
+            <div class="vm-flap"></div>
+        </div>
     </div>
-
-    <div class="vm-keys">
-        {% for p in products %}
-            {% set item = order.items | selectattr('product_id', 'equalto', p.id) | first %}
-            <button class="keypad-btn" {% if not item or item.quantity == 0 or item.dispensed %}disabled{% endif %} onclick="dispense('{{ p.slot_number }}')">{{ p.slot_number }}</button>
-        {% endfor %}
-    </div>
+    <div class="vm-footer-text">Ration Distribution System &bull; Select item using keypad or click on product</div>
 </div>
 
 <script>
 window.VM = {
     av: {
         {% for p in products %}
-        {% set item = order.items | selectattr('product_id', 'equalto', p.id) | first %}
+        {% set item = order.items | selectattr('product_id', 'equalto', p.id) | list | first %}
         '{{ p.slot_number }}': {{ 'true' if (item and item.quantity > 0 and not item.dispensed) else 'false' }},
         {% endfor %}
     },
-    qty: {
+    names: {
         {% for p in products %}
-        {% set item = order.items | selectattr('product_id', 'equalto', p.id) | first %}
-        '{{ p.slot_number }}': {{ item.quantity if item else 0 }},
-        {% endfor %}
-    },
-    dp: {
-        {% for p in products %}
-        {% set item = order.items | selectattr('product_id', 'equalto', p.id) | first %}
-        '{{ p.slot_number }}': {{ 'true' if (item and item.dispensed) else 'false' }},
+        '{{ p.slot_number }}': '{{ p.name }}',
         {% endfor %}
     }
 };
-var labels = {
-    {% for p in products %}
-    '{{ p.slot_number }}': '{{ p.name }}',
-    {% endfor %}
-};
-</script>
 
-<script>
-var available = window.VM.av;
+let currentSlot = '';
+
 var AC = null;
-function getAC(){ if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); return AC; }
-document.addEventListener('click',  function(){getAC();},{once:true});
-document.addEventListener('keydown', function(){getAC();},{once:true});
-
-function playBeep(){
-    try{var ctx=getAC(),t=ctx.currentTime;
-    [0,.13].forEach(function(d){var o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);o.type='square';o.frequency.value=1400;
-        g.gain.setValueAtTime(.6,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.09);
-        o.start(t+d);o.stop(t+d+.09);});}catch(e){}
+function getAC() { 
+    if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); 
+    if(AC.state === 'suspended') AC.resume(); 
+    return AC; 
 }
-function dispense(slot_number){
-    if(!available[slot_number])return;
-    available[slot_number]=false;
-    playBeep();
-    if(window.vm3dTrigger)window.vm3dTrigger(slot_number);
-    
-    // Get the correct icon for the overlay
-    var name = labels[slot_number].toLowerCase();
-    var icon = '📦';
-    if(name.includes('rice')) icon = '🌾';
-    else if(name.includes('sugar')) icon = '🍬';
-    else if(name.includes('oil')) icon = '🧴';
-    else if(name.includes('wheat')) icon = '🍞';
-    else if(name.includes('dal')) icon = '🍲';
-    else if(name.includes('salt')) icon = '🧂';
+document.addEventListener('click', function(){ getAC(); }, {once:true});
 
-    document.getElementById('dispenseIcon').innerHTML = icon;
-    document.getElementById('dispenseMsg').textContent = 'Dispensing ' + labels[slot_number] + '...';
+function playBeep(freq = 1400, dur = 0.09) {
+    try {
+        var ctx = getAC(), t = ctx.currentTime;
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'square'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.3, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.start(t); o.stop(t + dur);
+    } catch(e) {}
+}
+
+function updateLCD(line1, line2) {
+    const lcd = document.getElementById('lcdScreen');
+    lcd.innerHTML = `<span>${line1}</span><span>${line2}</span>`;
+}
+
+function pressKey(num) {
+    playBeep(1800, 0.05);
+    currentSlot += num.toString();
+    if(currentSlot.length > 2) currentSlot = currentSlot.substring(1);
+    
+    updateLCD('SLOT: ' + currentSlot, '');
+    
+    if(window.VM.names[currentSlot]) {
+        selectSlot(currentSlot);
+    }
+}
+
+function selectSlot(slot) {
+    playBeep(1200, 0.05);
+    currentSlot = slot;
+    if(window.VM.av[slot]) {
+        updateLCD('SLOT ' + slot + ' READY', window.VM.names[slot].toUpperCase());
+        document.getElementById('btnDispense').disabled = false;
+        document.getElementById('btnRemove').disabled = false;
+        document.getElementById('btnDispense').style.opacity = '1';
+        document.getElementById('btnRemove').style.opacity = '1';
+    } else {
+        updateLCD('SLOT ' + slot, 'UNAVAILABLE');
+        document.getElementById('btnDispense').disabled = true;
+        document.getElementById('btnRemove').disabled = true;
+        document.getElementById('btnDispense').style.opacity = '0.5';
+        document.getElementById('btnRemove').style.opacity = '0.5';
+    }
+}
+
+function actionDispense() {
+    if(!currentSlot || !window.VM.av[currentSlot]) return;
+    playBeep(1000, 0.2);
+    
+    // UI Feedback
+    updateLCD('DISPENSING', window.VM.names[currentSlot].toUpperCase());
+    document.getElementById('dispenserFlap').classList.add('open');
+    
+    var iconElem = document.getElementById('icon-' + currentSlot);
+    var iconChar = iconElem ? iconElem.innerText : '📦';
+    
+    document.getElementById('dispenseIcon').innerHTML = iconChar;
+    document.getElementById('dispenseMsg').textContent = 'Dispensing ' + window.VM.names[currentSlot] + '...';
     document.getElementById('dispenseOverlay').classList.add('show');
-    setTimeout(function(){document.getElementById('form-'+slot_number).submit();},2600);
-}
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script>
-(function(){
-'use strict';
-
-if(typeof THREE==='undefined') return;
-
-var renderer, scene, camera;
-var pods={}, glowLts={}, anim=null;
-var box = document.getElementById('vm3d-box');
-var canvas = document.getElementById('vm3d');
-var W = box.clientWidth, H = box.clientHeight;
-
-function getEmoji(n){
-    n=(n||"").toLowerCase();
-    if(n.includes('rice')) return '🌾'; if(n.includes('sugar')) return '🍬';
-    if(n.includes('oil')) return '🧴'; if(n.includes('wheat')) return '🍞';
-    if(n.includes('dal')) return '🍲'; if(n.includes('salt')) return '🧂';
-    return '📦';
-}
-
-function mkTex(e,c){
-    var can=document.createElement('canvas'); can.width=256; can.height=256;
-    var x=can.getContext('2d'); 
-    x.fillStyle=c; x.fillRect(0,0,256,256);
-    x.strokeStyle='#ffffff'; x.lineWidth=12; x.strokeRect(10,10,236,236);
-    x.fillStyle='#fff'; x.font='bold 160px Arial'; x.textAlign='center'; x.textBaseline='middle';
-    x.fillText(e,128,128); 
-    var tex = new THREE.CanvasTexture(can);
-    tex.needsUpdate = true;
-    return tex;
-}
-
-function init(){
-    scene = new THREE.Scene(); 
-    scene.background = new THREE.Color(0x040812);
-    scene.fog = new THREE.Fog(0x040812, 2, 10);
-
-    camera = new THREE.PerspectiveCamera(40, W/H, 0.1, 100);
-    camera.position.set(0, 0.4, 4.0);
-
-    renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
-    renderer.setSize(W,H);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-
-    // Floor with reflections
-    var floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(20, 20),
-        new THREE.MeshStandardMaterial({color:0x0a1122, metalness:0.8, roughness:0.2})
-    );
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -1.3;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    // Background Glow
-    var bgGeo = new THREE.SphereGeometry(10, 32, 32);
-    var bgMat = new THREE.MeshBasicMaterial({color:0x00d2ff, side:THREE.BackSide, transparent:true, opacity:0.04});
-    scene.add(new THREE.Mesh(bgGeo, bgMat));
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    var sun = new THREE.DirectionalLight(0xffffff, 1.0); sun.position.set(5,10,7); sun.castShadow=true; scene.add(sun);
-    var rim = new THREE.PointLight(0x00d2ff, 3, 10); rim.position.set(-3,2,2); scene.add(rim);
-
-    // Chassis - Polished Gunmetal Portal
-    var body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.8, 0.9, 2.2, 32, 1, true, Math.PI*0.5, Math.PI),
-        new THREE.MeshStandardMaterial({
-            color:0x1e293b, 
-            metalness:0.9, 
-            roughness:0.2, 
-            side:THREE.DoubleSide,
-            emissive: 0x0a192f,
-            emissiveIntensity: 0.5
-        })
-    );
-    scene.add(body);
     
-    var glass = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.78, 0.88, 2.15, 32, 1, true, -Math.PI*0.5, Math.PI),
-        new THREE.MeshPhysicalMaterial({
-            color:0x00d2ff, 
-            transparent:true, 
-            opacity:0.2, 
-            transmission:0.8, 
-            roughness:0,
-            emissive: 0x00d2ff,
-            emissiveIntensity: 0.1
-        })
-    );
-    scene.add(glass);
-
-    // Multiple Glowing Rims (Top, Bottom, Middle)
-    function mkRim(y, r, col){
-        var rMesh=new THREE.Mesh(
-            new THREE.TorusGeometry(r, 0.02, 16, 100), 
-            new THREE.MeshBasicMaterial({color:col||0x00d2ff})
-        );
-        rMesh.rotation.x=Math.PI/2; rMesh.position.y=y; scene.add(rMesh);
-    }
-    mkRim(1.1, 0.8, 0x00ffff);  // Top Neon
-    mkRim(-1.1, 0.9, 0x00ffff); // Bottom Neon
-    const prds = [
-        {% for p in products %}
-        {id: '{{ p.slot_number }}', name: '{{ p.name }}', hex: '{{ p.color_hex or "#3b82f6" }}'}{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
-
-    prds.forEach((p,i)=>{
-        var row=Math.floor(i/2); var col=i%2;
-        var ang=col==0 ? -0.38 : 0.38;
-        var rad=0.68;
-        var px=Math.sin(ang)*rad; var pz=Math.cos(ang)*rad - 0.15;
-        var py=0.75 - row*0.38;
-        
-        var pod = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.16,0.16,0.22,16), 
-            new THREE.MeshPhysicalMaterial({color:0x00d2ff, transparent:true, opacity:0.15, transmission:0.9})
-        );
-        pod.position.set(px,py,pz); scene.add(pod);
-        
-        var tex=mkTex(getEmoji(p.name), p.hex);
-        var item=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.13,0.13), new THREE.MeshStandardMaterial({
-            map:tex, emissive:new THREE.Color(p.hex), emissiveIntensity:0.6, emissiveMap:tex
-        }));
-        item.position.set(px,py,pz+0.04);
-        item.rotation.y = -ang;
-        scene.add(item);
-        
-        pods[p.id]={x:px, y:py, z:pz, hex:parseInt(p.hex.replace('#',''),16), label:p.name};
-        var lt=new THREE.PointLight(parseInt(p.hex.replace('#',''),16), 0, 0.8);
-        lt.position.set(px,py,pz+0.1); scene.add(lt);
-        glowLts[p.id]=lt;
-    });
-
-    function loop(){
-        requestAnimationFrame(loop);
-        if(anim){
-            var t=Math.min((performance.now()-anim.t0)/anim.dur, 1);
-            anim.obj.position.y=anim.startY + (anim.targetY-anim.startY)*t;
-            anim.obj.rotation.y+=0.1; anim.obj.rotation.x+=0.05;
-            if(t>=1){ scene.remove(anim.obj); anim=null; }
-        }
-        renderer.render(scene, camera);
-    }
-    loop();
-    document.getElementById('vm3d-loading').style.display='none';
+    setTimeout(function() {
+        document.getElementById('form-dispense-' + currentSlot).submit();
+    }, 2000);
 }
 
-window.vm3dTrigger = function(slot){
-    var it=pods[slot]; if(!it || anim) return;
-    glowLts[slot].intensity=3;
-    var tex=mkTex(getEmoji(it.label), '#'+it.hex.toString(16).padStart(6,'0'));
-    var obj=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.16), new THREE.MeshStandardMaterial({map:tex, emissive:new THREE.Color(it.hex), emissiveIntensity:0.7, emissiveMap:tex}));
-    obj.position.set(it.x, it.y, it.z); scene.add(obj);
-    anim={obj:obj, startY:it.y, targetY:-1.4, t0:performance.now(), dur:1800};
-    setTimeout(()=>{glowLts[slot].intensity=0;}, 1000);
-};
+function actionRemove() {
+    if(!currentSlot || !window.VM.av[currentSlot]) return;
+    playBeep(600, 0.3);
+    
+    if(confirm("Are you sure you want to remove " + window.VM.names[currentSlot] + " from your order? It will not be dispensed.")) {
+        updateLCD('REMOVING', window.VM.names[currentSlot].toUpperCase());
+        document.getElementById('form-remove-' + currentSlot).submit();
+    }
+}
 
-window.onload = init;
-})();
+// Disable buttons initially
+document.getElementById('btnDispense').style.opacity = '0.5';
+document.getElementById('btnRemove').style.opacity = '0.5';
 </script>
+
 </body>
 </html>

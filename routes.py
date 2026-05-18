@@ -41,6 +41,9 @@ def login():
             print(f"DEBUG: Found user {user.username}. Checking password...")
             if check_password_hash(user.password, password):
                 print(f"DEBUG: Password match! Logging in...")
+                if not user.is_active:
+                    flash('Your RFID is not active', 'error')
+                    return render_template('login.html')
                 login_user(user)
                 if user.is_admin:
                     return redirect(url_for('admin.dashboard'))
@@ -294,6 +297,41 @@ def dispense(slot_number):
         order.status = 'DISPENSED'
         db.session.commit()
         # Clean up session but keep order ID for thank you message
+        session['last_order_id'] = order.id
+        session.pop('vendingOrderId', None)
+        session.pop('vendingUserId', None)
+        return redirect(url_for('main.vending_thankyou'))
+        
+    return redirect(url_for('main.vending_machine'))
+
+@main.route('/vending/remove/<int:slot_number>', methods=['POST'])
+def remove_item(slot_number):
+    order_id = session.get('vendingOrderId')
+    if not order_id:
+        return redirect(url_for('main.vending_login'))
+        
+    order = Order.query.get(order_id)
+    if not order:
+        return redirect(url_for('main.vending_login'))
+        
+    for item in order.items:
+        if item.product.slot_number == slot_number and item.quantity > 0:
+            item.quantity = 0 # effectively removed, won't count against quota
+            item.dispensed = True
+            break
+            
+    db.session.commit()
+    
+    # Check if fully dispensed
+    all_dispensed = True
+    for item in order.items:
+        if item.quantity > 0 and not item.dispensed:
+            all_dispensed = False
+            break
+            
+    if all_dispensed:
+        order.status = 'DISPENSED'
+        db.session.commit()
         session['last_order_id'] = order.id
         session.pop('vendingOrderId', None)
         session.pop('vendingUserId', None)
